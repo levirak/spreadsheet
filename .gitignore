@@ -1,0 +1,17 @@
+#root
+
+#bin
+
+#build
+/build/*
+/build/**/*
+
+#src
+/src/*.o
+/src/**/*.o
+
+#tests
+/tests/*
+!*.[ch]
+!*.sh
+!/tests/sheets.d

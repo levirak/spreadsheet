@@ -1,0 +1,11 @@
+#:width 16 5
+    "a", 0      # comment
+"aa", 0
+"aaa", 0, 3
+"aaaa", "0  "
+"aaaaa", 0
+"aaaa", 0
+"aaa", 0
+"aa", 0
+"a", 0
+#:print width
