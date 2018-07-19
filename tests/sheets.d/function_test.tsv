@@ -1,0 +1,10 @@
+#:width 8 16
+#:print top_axis
+A0	:sum(B1--)
+
+A1	0
+A2	0
+A3	0
+A4	0
+
+# vim: ts=16 sw=16 noet

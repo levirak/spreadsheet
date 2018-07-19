@@ -4,18 +4,17 @@
 #include <sc_strings.h>
 
 #include <stdio.h>
-#include <ctype.h>
+/*#include <ctype.h>*/
 #include <stdlib.h>
 
-/* @TEMP: this row count
- * Note that for now there can be now more than 26 rows.
- */
-int rwidth[8];
-
-int main(int argc, char **argv)
-{
+int main(int argc, char **argv) {
     char buf[1024];
     FILE *file = 0;
+
+    /* @TEMP: this row count
+    * Note that for now there can be now more than 26 rows.
+    */
+    int rwidth[8];
 
     /* TODO: true argument parsing */
     check(argc == 2, "invalid invocation");
@@ -51,7 +50,6 @@ int main(int argc, char **argv)
                             name[0] = 'A' + i;
                             PrintStringCell(name, DelimFor(i), rwidth[i]);
                         }
-                        printf("\n");
                     }
                     else if (CompareString(word, "width") == 0) {
                         for (size_t i = 0; i < ArrayCount(rwidth); ++i) {
@@ -63,10 +61,14 @@ int main(int argc, char **argv)
         }
         else {
             char *cell;
-            rhs = SkipSpaces(rhs);
             while (*(cell = rhs)) {
-                cell = rhs;
                 rhs = BreakOffCell(rhs);
+
+                /* TODO: actually deal with command cells */
+                char xxx[] = "!!!";
+                if (IsCommandChar(cell[0])) {
+                    cell = xxx;
+                }
 
                 PrintStringCell(cell, *rhs? " ": "\n", rwidth[rcount++]);
             }

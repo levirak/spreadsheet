@@ -54,7 +54,6 @@ char *BreakOffWord(char *str) {
 char *BreakOffCell(char *str) {
     while (*str && !IsDelimChar(*str)) ++str;
     if (*str) *str++ = '\0';
-    str = SkipSpaces(str);
     return str;
 }
 
@@ -81,8 +80,18 @@ char *Strip(char *str) {
 
 void PrintStringCell(char *cell, char *delim, int width) {
     /* TODO: scan forward for the (width+1)th glyph and set that */
+    /*
     if (width < GlyphCount(cell))
         cell[width] = '\0';
+     */
+    int count = 0;
+    for (char *cur = cell; *cur; ++cur) {
+        count += ((*cur & '\xc0') != '\x80');
+        if (count > width) {
+            *cur = '\0';
+            break;
+        }
+    }
 
     /* TODO: process fields ourself to add proper alignment */
     printf("%-*s%s", width, Strip(cell), delim);
