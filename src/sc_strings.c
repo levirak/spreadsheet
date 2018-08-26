@@ -101,3 +101,25 @@ void PrintNumCell(int cell, char *delim, int width) {
     /* TODO: process fields ourself to add proper alignment */
     printf("%-*d%s", width, cell, delim);
 }
+
+
+
+size_t BufferString(char *Buffer, size_t Size, char *String) {
+    char *End = Buffer + Size;
+
+    char *BCur = Buffer;
+    char *SCur = String;
+
+    while (BCur < End) {
+        *BCur++ = *SCur;
+
+        if (*SCur) {
+            ++SCur;
+        }
+        else {
+            break;
+        }
+    }
+
+    return SCur - String;
+}

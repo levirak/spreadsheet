@@ -15,4 +15,6 @@ char *Strip(char *str);
 void PrintStringCell(char *cell, char *delim, int column);
 void PrintNumCell(int cell, char *delim, int column);
 
+size_t BufferString(char *Buffer, size_t Size, char *String);
+
 #endif

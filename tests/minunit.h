@@ -13,14 +13,14 @@
 }
 
 #define mu_run_test(test) {                                 \
-    debug("\n-----%s", " " #test);                          \
+    Debug("\n-----%s", " " #test);                          \
     message = test(); tests_run++;                          \
     if (message) return message;                            \
 }
 
 #define RUN_TESTS(test) int main(int argc, char **argv) {   \
     if((argc = 1)) {                                        \
-        debug("----- RUNNING: %s", argv[0]);                \
+        Debug("----- RUNNING: %s", argv[0]);                \
         printf("----\nRUNNING: %s\n", argv[0]);             \
         char *result = test();                              \
         if (result)                                         \

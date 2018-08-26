@@ -8,10 +8,10 @@
  *
  * @author  Zed Shaw
  *
- * @brief   Zed Shaw's awesome debug macros.
+ * @brief   Zed Shaw's awesome Debug macros.
  *
- * These macros are meant to expedite the debugging process by allowing
- * convenient means to log errors and other debugging information. They also
+ * These macros are meant to expedite the Debugging process by allowing
+ * convenient means to log errors and other Debugging information. They also
  * provide a useful error control mechanism through an \c "error:" jump point.
  * Within this context, any macro that "aborts the function" does so by jumping
  * directly to \c error. After this point, anything that should be dealt with
@@ -24,20 +24,20 @@
 #include <string.h>
 
 /**
- * @brief   Logs debugging information into \c stderr and can be compiled out.
+ * @brief   Logs Debugging information into \c stderr and can be compiled out.
  *
  * If \c NDEBUG is defined (usually during compilation by the cc flag
- * \c -DNDEFINE), all \c debug calls will be removed from the code at compile
+ * \c DNDEBUG), all \c Debug calls will be removed from the code at compile
  * time. Leaving this macro in code, therefore, will not effect the final
- * product while allowing for quick recall of all debugging information.
+ * product while allowing for quick recall of all Debugging information.
  *
  * @param   M   Message, as a char *, using \c printf formating
  * @param   ... Various parameters as would be passed to \c printf
  */
 #ifdef NDEBUG
-#define debug(M, ...)
+#define Debug(M, ...)
 #else
-#define debug(M, ...) fprintf(stderr, "DEBUG %s:%d: " M "\n", __FILE__, __LINE__, ##__VA_ARGS__)
+#define Debug(M, ...) fprintf(stderr, "Debug %s:%d: " M "\n", __FILE__, __LINE__, ##__VA_ARGS__)
 #endif
 
 /**
@@ -47,7 +47,7 @@
  *
  * @return  Error message
  */
-#define clean_errno() (errno == 0 ? "None" : strerror(errno))
+#define CleanErrno() (errno == 0 ? "None" : strerror(errno))
 
 /**
  * @brief   Logs an error into stderr.
@@ -55,7 +55,7 @@
  * @param   M   Message, as a char *, using \c printf formating
  * @param   ... Various parameters as would be passed to \c printf
  */
-#define log_err(M, ...) fprintf(stderr, "[ERROR] (%s:%d: errno: %s) " M "\n", __FILE__, __LINE__, clean_errno(), ##__VA_ARGS__)
+#define Error(M, ...) fprintf(stderr, "[ERROR] (%s:%d: errno: %s) " M "\n", __FILE__, __LINE__, CleanErrno(), ##__VA_ARGS__)
 
 /**
  * @brief   Logs a warning into \c stderr.
@@ -63,7 +63,7 @@
  * @param   M   Message, as a char *, using \c printf formating
  * @param   ... Various parameters as would be passed to \c printf
  */
-#define log_warn(M, ...) fprintf(stderr, "[WARN] (%s:%d: errno: %s) " M "\n", __FILE__, __LINE__, clean_errno(), ##__VA_ARGS__)
+#define Warn(M, ...) fprintf(stderr, "[WARN] (%s:%d: errno: %s) " M "\n", __FILE__, __LINE__, CleanErrno(), ##__VA_ARGS__)
 
 /**
  * @brief   Logs useful information into \c stderr.
@@ -71,67 +71,68 @@
  * @param   M   Message, as a char *, using \c printf formating
  * @param   ... Various parameters as would be passed to \c printf
  */
-#define log_info(M, ...) fprintf(stderr, "[INFO] (%s:%d) " M "\n", __FILE__, __LINE__, ##__VA_ARGS__)
+#define Info(M, ...) fprintf(stderr, "[INFO] (%s:%d) " M "\n", __FILE__, __LINE__, ##__VA_ARGS__)
 
 /**
- * @brief   Performs a check on \a A and logs an error if false.
+ * @brief   Performs a Check on \a A and logs an error if false.
  *
- * This checks if \a A is false, and if so, logs message \a M into \c stderr
+ * This Checks if \a A is false, and if so, logs message \a M into \c stderr
  * and aborts the function.
  *
  * NOTE: This macro demands that an \c error: tag be present in the code.
  *
- * @param   A   Expression to check
+ * @param   A   Expression to Check
  * @param   M   Message, as a char *, using \c printf formating
  * @param   ... Various parameters as would be passed to \c printf
  */
-#define check(A, M, ...) if(!(A)) { log_err(M, ##__VA_ARGS__); errno=0; goto error;}
+#define Check(A, M, ...) if(!(A)) { Error(M, ##__VA_ARGS__); errno=0; goto error;}
 
 /**
  * @brief   Marks a point that should never be reached.
  *
- * Place \c sentinel anywhere that should never be reached. If sentinel is ever
- * called, then something can be assumed to have gone wrong. If ever reached,
- * \c sentinel logs the message \a M into \c stderr and aborts the function.
+ * Place \c Sentinel anywhere that should never be reached. If \c Sentinel is
+ * ever called, then something can be assumed to have gone wrong. If ever
+ * reached, \c sentinel logs the message \a M into \c stderr and aborts the
+ * function.
  *
  * NOTE: This macro demands that an \c error: tag be present in the code.
  *
  * @param   M   Message, as a char *, using \c printf formating
  * @param   ... Various parameters as would be passed to \c printf
  */
-#define sentinel(M, ...) { log_err(M, ##__VA_ARGS__); errno=0; goto error; }
+#define Sentinel(M, ...) { Error(M, ##__VA_ARGS__); errno=0; goto error; }
 
 /**
- * @brief   Specialization of \c check for checking memory allocation.
+ * @brief   Specialization of \c Check for Checking memory allocation.
  *
- * Behaves exactly like \c check, but has a default message. This is meant
+ * Behaves exactly like \c Check, but has a default message. This is meant
  * mostly for convenience.
  *
  * NOTE: This macro demands that an \c error: tag be present in the code.
  *
- * @see check()
+ * @see Check()
  *
  * @param   A   Pointer to memory location
  */
-#define check_mem(A) check((A), "Out of memory.")
+#define CheckMemory(A) Check((A), "Out of memory.")
 
 /**
- * @brief   Specialization of \c check that logs using \a debug.
+ * @brief   Specialization of \c Check that logs using \a Debug.
  *
- * This behaves almost exactly like \c check, but rather than logging an error
- * into \c stderr, the \c debug macro is used. This means that defining
+ * This behaves almost exactly like \c Check, but rather than logging an error
+ * into \c stderr, the \c Debug macro is used. This means that defining
  * \c NDEBUG results in this macro not printing any output. Note that this macro
  * still aborts the function.
  *
  * NOTE: This macro demands that an \c error: tag be present in the code.
  *
- * @see check()
- * @see debug()
+ * @see Check()
+ * @see Debug()
  *
- * @param   A   Expression to check
+ * @param   A   Expression to Check
  * @param   M   Message, as a char *, using \c printf formating
  * @param   ... Various parameters as would be passed to \c printf
  */
-#define check_debug(A, M, ...) if(!(A)) { debug(M, ##__VA_ARGS__); errno=0; goto error; }
+#define CheckDebug(A, M, ...) if(!(A)) { Debug(M, ##__VA_ARGS__); errno=0; goto error; }
 
 #endif
