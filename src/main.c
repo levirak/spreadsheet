@@ -15,12 +15,11 @@ enum row_type {
 };
 
 int main(int argc, char **argv) {
-    char buf[1024];
-    FILE *file = 0;
+    char Buffer[1024];
+    FILE *File = NULL;
+    document *Spreadsheet = NULL;
     enum row_type RowType = ROW_NONE;
 
-    row *FirstRow = AllocRow();
-    row *Row = FirstRow;
 
     /* @TEMP: this row count
     * Note that for now there can be now more than 26 rows.
@@ -28,35 +27,47 @@ int main(int argc, char **argv) {
     int ColWidth[8];
 
     /* TODO: true argument parsing */
-    Check(argc == 2, "invalid invocation");
+    Check(argc == 2, "USAGE: %s FILE", argv[0]);
 
-    Check(file = fopen(argv[1], "r"), "failed to open file");
+    Check(File = fopen(argv[1], "r"), "failed to open file");
 
     /* initialize ColWidth */
-    for (size_t i = 0; i < ArrayCount(ColWidth); ++i) ColWidth[i] = 8;
+    for (size_t i = 0; i < ArrayCount(ColWidth); ++i) {
+        ColWidth[i] = 8;
+    }
 
-    while (GetLine(buf, ArrayCount(buf), file) > 0) {
+    Spreadsheet = AllocDocument();
+    row *Row = GetNewRow(Spreadsheet);
+
+    while (GetLine(Buffer, ArrayCount(Buffer), File) > 0) {
         int Column = 0;
-        char *rhs = buf;
+        char *RHS = Buffer;
 
-        if (IsCommentChar(rhs[0])) {
-            if (IsCommandChar(rhs[1])) {
-                char *Word = rhs + 2;
-                rhs = BreakOffWord(Word);
+        if (IsCommentChar(RHS[0])) {
+            /* NOTE: at least for now, the comment character must be the first
+            * character of the line to count as a comment */
+
+            if (IsCommandChar(RHS[1])) {
+                char *Word = RHS + 2;
+                RHS = BreakOffWord(Word);
 
                 /* process commands */
 
                 if (CompareString(Word, "width") == 0) {
-                    while (*(Word = rhs)) {
-                        rhs = BreakOffWord(rhs);
+                    if (!Row) {
+                        Row = GetNewRow(Spreadsheet);
+                    }
+
+                    while (*(Word = RHS)) {
+                        RHS = BreakOffWord(RHS);
 
                         /* TODO: check for errors from strtol */
                         ColWidth[Column++] = strtol(Word, NULL, 0);
                     }
                 }
                 else if (CompareString(Word, "print") == 0) {
-                    Word = rhs;
-                    rhs = BreakOffWord(rhs);
+                    Word = RHS;
+                    RHS = BreakOffWord(RHS);
 
                     if (CompareString(Word, "top_axis") == 0) {
                         for (size_t i = 0; i < ArrayCount(ColWidth); ++i) {
@@ -73,8 +84,8 @@ int main(int argc, char **argv) {
                     }
                 }
                 else if (CompareString(Word, "begin") == 0) {
-                    Word = rhs;
-                    rhs = BreakOffWord(rhs);
+                    Word = RHS;
+                    RHS = BreakOffWord(RHS);
 
                     if (CompareString(Word, "head") == 0) {
                         if (RowType == ROW_NONE) {
@@ -117,10 +128,11 @@ int main(int argc, char **argv) {
         }
         else {
             char *String;
-            cell *Cell = Row->FirstCell = AllocCell(NULL);
 
-            while (*(String = rhs)) {
-                rhs = BreakOffCell(rhs);
+            while (*(String = RHS)) {
+                cell *Cell = GetNewCell(Row);
+
+                RHS = BreakOffCell(RHS);
 
                 /* TODO: distinguish head, body, and foot. */
                 char xxx[] = "!!!";
@@ -130,31 +142,38 @@ int main(int argc, char **argv) {
                 }
 
                 BufferString(Cell->Value, ArrayCount(Cell->Value), String);
-
-                Cell->Next = AllocCell(NULL);
-                Cell = Cell->Next;
             }
 
-            Row->Next = AllocRow();
-            Row = Row->Next;
+            Row = GetNewRow(Spreadsheet);;
         }
     }
 
     Info("We have read the entire file into memory.");
 
-    for (Row = FirstRow; Row; Row = Row->Next) {
-        int Column = 0;
-        for (cell *Cell = Row->FirstCell; Cell; Cell = Cell->Next) {
-            int Width = ColWidth[Column++];
-            PrintStringCell(Cell->Value, Cell->Next? " ": "\n", Width);
+    for (int i = 0; i < Spreadsheet->RowCount; ++i) {
+        row *Row = Spreadsheet->Row + i;
+        cell *Cell;
+        int j;
+
+        for (j = 0; j < Row->CellCount - 1; ++j) {
+            Cell = Row->Cell + j;
+            Cell->Width = ColWidth[j];
+
+            PrintStringCell(Cell->Value, " ", Cell->Width);
         }
+
+        Cell = Row->Cell + j;
+        Cell->Width = ColWidth[j];
+        PrintStringCell(Cell->Value, "\n", Cell->Width);
     }
 
-    fclose(file);
+    FreeDocument(Spreadsheet);
+    fclose(File);
 
     return 0;
 
 error:
-    if (file) fclose(file);
+    if (Spreadsheet) FreeDocument(Spreadsheet);
+    if (File) fclose(File);
     return 1;
 }

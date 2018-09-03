@@ -3,41 +3,68 @@
 
 #include <stdlib.h>
 
-row *AllocRow() {
-    row *Row = malloc(sizeof *Row);
+document *AllocDocument() {
+    document *Document;
 
-    MemZero(Row, sizeof *Row);
+    Document = malloc(sizeof *Document);
+    Document->RowCap = 1;
+    Document->RowCount = 0;
+    Document->Row = malloc(sizeof *Document->Row * Document->RowCap);
+
+    return Document;
+}
+
+void FreeDocument(document *Document) {
+    for (int i = 0; i < Document->RowCount; ++i) {
+        row *Row = Document->Row + i;
+
+        free(Row->Cell);
+    }
+
+    free(Document->Row);
+    free(Document);
+}
+
+row *GetNewRow(document *Root) {
+    row *Row = NULL;
+
+    if (Root) {
+        if (Root->RowCount >= Root->RowCap) {
+            Root->RowCap *= 2;
+            Root->Row = realloc(Root->Row, sizeof *Root->Row * Root->RowCap);
+        }
+
+        Row = Root->Row + Root->RowCount++;
+        Row->CellCap = 1;
+        Row->CellCount = 0;
+        Row->Cell = malloc(sizeof *Row->Cell * Row->CellCap);
+    }
 
     return Row;
 }
 
-void FreeRow(row *Row) {
-    for (cell *Cell = Row->FirstCell; Cell; Cell = Cell->Next) {
-        FreeCell(Cell);
+static inline
+cell *GetNewCellPreChecked(row *Row) {
+    if (Row->CellCount >= Row->CellCap) {
+        Row->CellCap *= 2;
+        Row->Cell = realloc(Row->Cell, sizeof *Row->Cell * Row->CellCap);
     }
 
-    free(Row);
-}
-
-cell *AllocCell(cell *Prototype) {
-    cell *Cell = malloc(sizeof *Cell);
-
-    if (Prototype) {
-        MemCopy(Cell, sizeof *Cell, Prototype);
-        Cell->Next = NULL;
-    }
-    else {
-        MemZero(Cell, sizeof *Cell);
-    }
+    cell *Cell = Row->Cell + Row->CellCount++;
 
     return Cell;
 }
 
-void FreeCell(cell *Cell) {
-    free(Cell);
+cell *GetNewCell(row *Root) {
+    cell *Cell = NULL;
+
+    if (Root) {
+        Cell = GetNewCellPreChecked(Root);
+        Cell->Width = DEFAULT_CELL_WIDTH;
+    }
+
+    return Cell;
 }
-
-
 
 void MemSet(void *Destination, size_t Size, char Byte) {
     char *End = (char *)Destination + Size;

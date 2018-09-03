@@ -4,6 +4,7 @@
 #:begin body
 a	0
 aa	0
+aa		3
 aaa	0	3
 aaaa	9
 aaaaa	9.3
@@ -12,5 +13,5 @@ aaa	9.344
 aa	9.345
 a	9.346
 #:print width
-
+#
 # vim: ts=16 sw=16 noet

@@ -3,21 +3,30 @@
 
 #include <stddef.h>
 
+#define DEFAULT_CELL_WIDTH 8
+
 typedef struct cell {
+    int Width;
     char Value[32]; /* TEMP? */
-    struct cell *Next;
 } cell;
 
 typedef struct row {
-    struct cell *FirstCell;
-    struct row *Next;
+    cell *Cell;
+    int CellCap;
+    int CellCount;
 } row;
 
-row *AllocRow();
-void FreeRow(row *);
+typedef struct document {
+    row *Row;
+    int RowCap;
+    int RowCount;
+} document;
 
-cell *AllocCell(cell *Prototype);
-void FreeCell(cell *);
+document *AllocDocument();
+void FreeDocument(document *);
+
+row *GetNewRow(document *Root);
+cell *GetNewCell(row *Row);
 
 #define MemZero(M, S) MemSet(M, S, 0)
 void MemSet(void *Destination, size_t Size, char Byte);
