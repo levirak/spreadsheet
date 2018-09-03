@@ -37,7 +37,6 @@ int main(int argc, char **argv) {
     }
 
     Spreadsheet = AllocDocument();
-    row *Row = GetNewRow(Spreadsheet);
 
     while (GetLine(Buffer, ArrayCount(Buffer), File) > 0) {
         int Column = 0;
@@ -54,20 +53,15 @@ int main(int argc, char **argv) {
                 /* process commands */
 
                 if (CompareString(Word, "width") == 0) {
-                    if (!Row) {
-                        Row = GetNewRow(Spreadsheet);
-                    }
-
-                    while (*(Word = RHS)) {
-                        RHS = BreakOffWord(RHS);
+                    while (*RHS) {
+                        RHS = BreakOffWord(Word = RHS);
 
                         /* TODO: check for errors from strtol */
                         ColWidth[Column++] = strtol(Word, NULL, 0);
                     }
                 }
                 else if (CompareString(Word, "print") == 0) {
-                    Word = RHS;
-                    RHS = BreakOffWord(RHS);
+                    RHS = BreakOffWord(Word = RHS);
 
                     if (CompareString(Word, "top_axis") == 0) {
                         for (size_t i = 0; i < ArrayCount(ColWidth); ++i) {
@@ -84,8 +78,7 @@ int main(int argc, char **argv) {
                     }
                 }
                 else if (CompareString(Word, "begin") == 0) {
-                    Word = RHS;
-                    RHS = BreakOffWord(RHS);
+                    RHS = BreakOffWord(Word = RHS);
 
                     if (CompareString(Word, "head") == 0) {
                         if (RowType == ROW_NONE) {
@@ -128,11 +121,12 @@ int main(int argc, char **argv) {
         }
         else {
             char *String;
+            row *Row = GetNewRow(Spreadsheet);
 
-            while (*(String = RHS)) {
+            while (*RHS) {
+                RHS = BreakOffCell(String = RHS);
+
                 cell *Cell = GetNewCell(Row);
-
-                RHS = BreakOffCell(RHS);
 
                 /* TODO: distinguish head, body, and foot. */
                 char xxx[] = "!!!";
@@ -143,8 +137,6 @@ int main(int argc, char **argv) {
 
                 BufferString(Cell->Value, ArrayCount(Cell->Value), String);
             }
-
-            Row = GetNewRow(Spreadsheet);;
         }
     }
 
