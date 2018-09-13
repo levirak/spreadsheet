@@ -1,7 +1,7 @@
 #:width 8 16
 #:print top_axis
 #:format string int
-A0	=sum(B1--)
+A0	=sum(B1--)	=sum(C0)
 #:begin body
 A1	1
 A2	2

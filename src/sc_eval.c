@@ -72,6 +72,8 @@ int GetNextCell(document *Spreadsheet, cell **Cell) {
 
         if (CurrentCell < Row->CellCount) {
             *Cell = Row->Cell + CurrentCell;
+            Info("getting Cell %c%d (%x).", 'A'+CurrentCell, CurrentRow,
+                 (*Cell)->Status);
         }
 
     }
@@ -88,10 +90,13 @@ char *EvaluateCell(document *Spreadsheet, cell *Cell) {
     if (Cell->Status & CELL_EVALUATING) {
         Cell->Status |= CELL_ERROR;
 
+        /* TODO: better error message */
+        Error("Cycle detected.");
         BufferString(Cell->Value, ArrayCount(Cell->Value), "E:cycle");
     }
     else if (Cell->Status & CELL_FUNCTION) {
         Cell->Status |= CELL_EVALUATING;
+        Info("Evaluating Cell (%x)", Cell->Status);
 
         char *FunctionName = Cell->Value + 1;
         char *RHS = BreakAtChar(FunctionName, '(');
@@ -106,14 +111,32 @@ char *EvaluateCell(document *Spreadsheet, cell *Cell) {
                 int Sum = 0;
 
                 while (GetNextCell(Spreadsheet, &C)) {
-                    char *v = EvaluateCell(Spreadsheet, C);
-                    /* TODO: get a real strtol */
-                    int i = StringToPositiveInt(v);
+                    EvaluateCell(Spreadsheet, C);
 
-                    Sum += i;
+                    /* pretend that NULL cells evaluate to 0 */
+                    if (C) {
+                        if (C->Status & CELL_ERROR) {
+                            C->Status &= ~CELL_ERROR;
+                            Cell->Status |= CELL_ERROR;
+
+                            break;
+                        }
+                        else {
+                            /* TODO: get a real strtol */
+                            int i = StringToPositiveInt(C->Value);
+
+                            Sum += i;
+                        }
+                    }
                 }
 
-                snprintf(Cell->Value, ArrayCount(Cell->Value), "%d", Sum);
+                if (Cell->Status & CELL_ERROR) {
+                    size_t Size = ArrayCount(Cell->Value);
+                    BufferString(Cell->Value, Size, "E:cycle");
+                }
+                else {
+                    snprintf(Cell->Value, ArrayCount(Cell->Value), "%d", Sum);
+                }
             }
             else {
                 BufferString(Cell->Value, ArrayCount(Cell->Value), "E:range");
