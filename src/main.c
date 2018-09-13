@@ -3,6 +3,7 @@
 
 #include <sc_strings.h>
 #include <sc_mem.h>
+#include <sc_eval.h>
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -128,36 +129,38 @@ int main(int argc, char **argv) {
 
                 cell *Cell = GetNewCell(Row);
 
-                /* TODO: distinguish head, body, and foot. */
-                char xxx[] = "!!!";
                 if (IsEvalChar(String[0])) {
-                    /* TODO: actually deal with command cells */
-                    String = xxx;
+                    Cell->Status |= CELL_FUNCTION;
                 }
 
+                StripNewLine(String);
                 BufferString(Cell->Value, ArrayCount(Cell->Value), String);
             }
         }
     }
 
-    Info("We have read the entire file into memory.");
+    Debug("We have read the entire file into memory.");
 
     for (int i = 0; i < Spreadsheet->RowCount; ++i) {
         row *Row = Spreadsheet->Row + i;
         cell *Cell;
         int j;
 
+        /* TODO: distinguish head, body, and foot. */
+
         for (j = 0; j < Row->CellCount - 1; ++j) {
             Cell = Row->Cell + j;
             Cell->Width = ColWidth[j];
 
-            PrintStringCell(Cell->Value, " ", Cell->Width);
+            PrintStringCell(EvaluateCell(Spreadsheet, Cell), " ", Cell->Width);
         }
 
         Cell = Row->Cell + j;
         Cell->Width = ColWidth[j];
-        PrintStringCell(Cell->Value, "\n", Cell->Width);
+        PrintStringCell(EvaluateCell(Spreadsheet, Cell), "\n", Cell->Width);
     }
+
+    Debug("We have finished printing the document.");
 
     FreeDocument(Spreadsheet);
     fclose(File);

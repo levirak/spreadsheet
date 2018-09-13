@@ -60,6 +60,7 @@ cell *GetNewCell(row *Root) {
 
     if (Root) {
         Cell = GetNewCellPreChecked(Root);
+        Cell->Status = 0;
         Cell->Width = DEFAULT_CELL_WIDTH;
     }
 

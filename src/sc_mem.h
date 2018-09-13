@@ -5,7 +5,14 @@
 
 #define DEFAULT_CELL_WIDTH 8
 
+enum cell_status_flags {
+    CELL_FUNCTION   = 0x01,
+    CELL_EVALUATING = 0x02,
+    CELL_ERROR = 0x04,
+};
+
 typedef struct cell {
+    int Status;
     int Width;
     char Value[32]; /* TEMP? */
 } cell;

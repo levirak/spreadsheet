@@ -50,9 +50,14 @@ char *BreakOffWord(char *Str) {
     return Str;
 }
 
-char *BreakOffCell(char *Str) {
-    while (*Str && !IsDelimChar(*Str)) ++Str;
+char *BreakAtChar(char *Str, char Delim) {
+    while (*Str && *Str != Delim) ++Str;
     if (*Str) *Str++ = '\0';
+    return Str;
+}
+
+char *FindChar(char *Str, char Delim) {
+    while (*Str && *Str != Delim) ++Str;
     return Str;
 }
 
@@ -77,12 +82,16 @@ char *Strip(char *Str) {
     return Str;
 }
 
+char *StripNewLine(char *Str) {
+    char *Cur = Str;
+    while (*Cur && *Cur != '\r' && *Cur != '\n') ++Cur;
+    *Cur = '\0';
+
+    return Str;
+}
+
 void PrintStringCell(char *cell, char *delim, int width) {
-    /* TODO: scan forward for the (width+1)th glyph and set that */
-    /*
-    if (width < GlyphCount(cell))
-        cell[width] = '\0';
-     */
+    /* TODO: glyphs with double width */
     int count = 0;
     for (char *Cur = cell; *Cur; ++Cur) {
         count += ((*Cur & '\xc0') != '\x80');
@@ -121,4 +130,16 @@ size_t BufferString(char *Buffer, size_t Size, char *String) {
     }
 
     return SCur - String;
+}
+
+int StringToPositiveInt(char *Str) {
+    int Result = 0;
+
+    while (isdigit(*Str)) {
+        Result = 10*Result + (*Str++ - '0');
+    }
+
+    if (*Str) Result = -1;
+
+    return Result;
 }

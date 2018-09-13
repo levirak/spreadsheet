@@ -4,8 +4,8 @@
 A0	=sum(B1--)
 #:begin body
 A1	1
-A2	1
-A3	1
-A4	1
-
+A2	2
+A3	3
+A4	4
+#
 # vim: ts=16 sw=16 noet
