@@ -88,7 +88,7 @@ char *EvaluateCell(document *Spreadsheet, cell *Cell) {
     if (!Cell) return NULL;
 
     if (Cell->Status & CELL_EVALUATING) {
-        Cell->Status |= CELL_ERROR;
+        Cell->Status |= CELL_CAUSE_ERROR;
 
         /* TODO: better error message */
         Error("Cycle detected.");
@@ -115,8 +115,13 @@ char *EvaluateCell(document *Spreadsheet, cell *Cell) {
 
                     /* pretend that NULL cells evaluate to 0 */
                     if (C) {
-                        if (C->Status & CELL_ERROR) {
-                            C->Status &= ~CELL_ERROR;
+                        if (C->Status & CELL_CAUSE_ERROR) {
+                            C->Status &= ~CELL_CAUSE_ERROR;
+                            Cell->Status |= CELL_ERROR;
+
+                            break;
+                        }
+                        else if (C->Status & CELL_ERROR) {
                             Cell->Status |= CELL_ERROR;
 
                             break;
@@ -124,6 +129,7 @@ char *EvaluateCell(document *Spreadsheet, cell *Cell) {
                         else {
                             /* TODO: get a real strtol */
                             int i = StringToPositiveInt(C->Value);
+                            Info("i = %d", i);
 
                             Sum += i;
                         }
@@ -143,7 +149,7 @@ char *EvaluateCell(document *Spreadsheet, cell *Cell) {
             }
         }
 
-        Cell->Status &= ~CELL_EVALUATING;
+        Cell->Status &= ~(CELL_EVALUATING | CELL_FUNCTION);
     }
 
     return Cell->Value;

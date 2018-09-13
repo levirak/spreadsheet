@@ -14,7 +14,6 @@ char *BreakAtChar(char *String, char Delim);
 char *FindChar(char *String, char Delim);
 int CompareString(char *A, char *B);
 char *Strip(char *String);
-char *StripNewLine(char *String);
 void PrintStringCell(char *Cell, char *Delim, int Column);
 void PrintNumCell(int Cell, char *Delim, int Column);
 

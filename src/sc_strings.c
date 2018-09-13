@@ -5,21 +5,32 @@
 #include <stdio.h>
 #include <ctype.h>
 
+/* NOTE: this function does not handle '\r\n' or '\r' line ends */
 ssize_t GetLine(char *Buffer, size_t BufferSize, FILE *File) {
     char *End = Buffer + BufferSize - 1; /* leave space for a '\0' */
-    char *Cur = Buffer;
-    char C;
+    char *Cur;
+    char C = '\0';
 
-    while (Cur < End) {
-        if ((C = fgetc(File)) == EOF) return -1;
-        if ((*Cur++ = C) == '\n') break;
+    for (Cur = Buffer; Cur < End; ++Cur) {
+        C = fgetc(File);
+        if (C == EOF || C == '\n') {
+            break;
+        }
+        else {
+            *Cur = C;
+        }
     }
+    *Cur = '\0';
 
     /* consume to the End of the line even if we cannot store it */
     while (C != EOF && C != '\n') C = fgetc(File);
 
-    *Cur = '\0';
-    return Cur - Buffer;
+    if (C == EOF) {
+        return -1;
+    }
+    else {
+        return Cur - Buffer;
+    }
 }
 
 /* NOTE: this function does not validate glyphs */
@@ -78,14 +89,6 @@ char *Strip(char *Str) {
         Cur = SkipSpaces(Cur);
     }
     *hold = '\0';
-
-    return Str;
-}
-
-char *StripNewLine(char *Str) {
-    char *Cur = Str;
-    while (*Cur && *Cur != '\r' && *Cur != '\n') ++Cur;
-    *Cur = '\0';
 
     return Str;
 }

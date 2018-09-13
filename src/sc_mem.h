@@ -9,6 +9,7 @@ enum cell_status_flags {
     CELL_FUNCTION   = 0x01,
     CELL_EVALUATING = 0x02,
     CELL_ERROR = 0x04,
+    CELL_CAUSE_ERROR = 0x08,
 };
 
 typedef struct cell {

@@ -133,7 +133,6 @@ int main(int argc, char **argv) {
                     Cell->Status |= CELL_FUNCTION;
                 }
 
-                StripNewLine(String);
                 BufferString(Cell->Value, ArrayCount(Cell->Value), String);
             }
         }
