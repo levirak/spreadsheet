@@ -11,17 +11,21 @@
 
 /* basically a sparse lookup table */
 int DecimalWidth(unsigned int Num) {
-    if      (Num < 10)          return  1;
-    else if (Num < 100)         return  2;
-    else if (Num < 1000)        return  3;
-    else if (Num < 10000)       return  4;
-    else if (Num < 100000)      return  5;
-    else if (Num < 1000000)     return  6;
-    else if (Num < 10000000)    return  7;
-    else if (Num < 100000000)   return  8;
-    else if (Num < 1000000000)  return  9;
-    else                        return 10;
+    int Width; // Maximum width Num could take
+
     /* This should cover a 32 bit integer. Add more if neccesary */
+    if      (Num < 10)          Width =  1;
+    else if (Num < 100)         Width =  2;
+    else if (Num < 1000)        Width =  3;
+    else if (Num < 10000)       Width =  4;
+    else if (Num < 100000)      Width =  5;
+    else if (Num < 1000000)     Width =  6;
+    else if (Num < 10000000)    Width =  7;
+    else if (Num < 100000000)   Width =  8;
+    else if (Num < 1000000000)  Width =  9;
+    else                        Width = 10;
+
+    return Width;
 }
 
 int main(int argc, char **argv) {
