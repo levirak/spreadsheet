@@ -7,20 +7,30 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdbool.h>
 
-enum row_type {
-    ROW_NONE, /* treat as if this were ROW_HEAD */
-    ROW_HEAD,
-    ROW_BODY,
-    ROW_FOOT,
-};
+/* basically a sparse lookup table */
+int DecimalWidth(unsigned int Num) {
+    if      (Num < 10)          return  1;
+    else if (Num < 100)         return  2;
+    else if (Num < 1000)        return  3;
+    else if (Num < 10000)       return  4;
+    else if (Num < 100000)      return  5;
+    else if (Num < 1000000)     return  6;
+    else if (Num < 10000000)    return  7;
+    else if (Num < 100000000)   return  8;
+    else if (Num < 1000000000)  return  9;
+    else                        return 10;
+    /* This should cover a 32 bit integer. Add more if neccesary */
+}
 
 int main(int argc, char **argv) {
     char Buffer[1024];
     FILE *File = NULL;
     document *Spreadsheet = NULL;
-    enum row_type RowType = ROW_NONE;
 
+    bool PrintTopAxis = false;
+    bool PrintSideAxis = false;
 
     /* @TEMP: this row count
     * Note that for now there can be now more than 26 rows.
@@ -65,54 +75,16 @@ int main(int argc, char **argv) {
                     RHS = BreakOffWord(Word = RHS);
 
                     if (CompareString(Word, "top_axis") == 0) {
-                        for (size_t i = 0; i < ArrayCount(ColWidth); ++i) {
-                            char Name[2] = { 0};
-                            Name[0] = 'A' + i;
-                            PrintStringCell(Name, DelimFor(i), ColWidth[i]);
-                        }
+                        PrintTopAxis = true;
+                    }
+                    else if (CompareString(Word, "side_axis") == 0) {
+                        PrintSideAxis = true;
                     }
                     else if (CompareString(Word, "width") == 0) {
                         for (size_t i = 0; i < ArrayCount(ColWidth); ++i) {
                             int Width = ColWidth[i];
                             PrintNumCell(Width, DelimFor(i), Width);
                         }
-                    }
-                }
-                else if (CompareString(Word, "begin") == 0) {
-                    RHS = BreakOffWord(Word = RHS);
-
-                    if (CompareString(Word, "head") == 0) {
-                        if (RowType == ROW_NONE) {
-                            RowType = ROW_HEAD;
-                        }
-                        else if (RowType == ROW_HEAD) {
-                            Error("You may only begin the header once.");
-                        }
-                        else {
-                            Error("Head must be first.");
-                        }
-                    }
-                    else if (CompareString(Word, "body") == 0) {
-                        if (RowType == ROW_HEAD || RowType == ROW_NONE) {
-                            RowType = ROW_BODY;
-                        }
-                        else if (RowType == ROW_BODY) {
-                            Error("You may only begin the footer once.");
-                        }
-                        else {
-                            Error("Body must come after the head.");
-                        }
-                    }
-                    else if (CompareString(Word, "foot") == 0) {
-                        if (RowType == ROW_FOOT) {
-                            Error("You may only begin the footer once.");
-                        }
-                        else {
-                            RowType = ROW_FOOT;
-                        }
-                    }
-                    else {
-                        Error("Unknown command :begin %s", Word);
                     }
                 }
                 else {
@@ -138,12 +110,28 @@ int main(int argc, char **argv) {
         }
     }
 
+    int Margin = DecimalWidth(Spreadsheet->RowCount);
+
+    if (PrintTopAxis) {
+        if (PrintSideAxis) {
+            printf("%*s  ", Margin, "");
+        }
+
+        for (size_t i = 0; i < ArrayCount(ColWidth); ++i) {
+            char Name[2] = { 0};
+            Name[0] = 'A' + i;
+            PrintStringCell(Name, DelimFor(i), ColWidth[i]);
+        }
+    }
+
     for (int i = 0; i < Spreadsheet->RowCount; ++i) {
         row *Row = Spreadsheet->Row + i;
         cell *Cell;
         int j;
 
-        /* TODO: distinguish head, body, and foot. */
+        if (PrintSideAxis) {
+            printf("%*d  ", Margin, i+1);
+        }
 
         for (j = 0; j < Row->CellCount - 1; ++j) {
             Cell = Row->Cell + j;

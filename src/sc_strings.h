@@ -20,5 +20,6 @@ void PrintNumCell(int Cell, char *Delim, int Column);
 size_t BufferString(char *Buffer, size_t Size, char *String);
 
 int StringToPositiveInt(char *String);
+int StringToInt(char *String, char **RHS);
 
 #endif

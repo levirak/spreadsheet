@@ -146,3 +146,24 @@ int StringToPositiveInt(char *Str) {
 
     return Result;
 }
+
+int StringToInt(char *Str, char **RHS) {
+    int Result = 0;
+    int Mod = 1;
+
+    switch (*Str) {
+    case '-':
+        Mod = -1;
+        ++Str;
+    case '+':
+        /* ignore */
+        break;
+    }
+
+    while (isdigit(*Str)) {
+        Result = 10*Result + (*Str++ - '0');
+    }
+
+    *RHS = Str;
+    return Mod * Result;
+}

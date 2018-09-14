@@ -28,7 +28,7 @@ int InitRange(char *RangeSpec, range *Range) {
     char *RHS = BreakAtChar(RangeSpec, '-');
 
     Range->StartCell = Range->CurrentCell = RangeSpec[0] - 'A';
-    Range->StartRow = Range->CurrentRow = StringToPositiveInt(RangeSpec+1);
+    Range->StartRow = Range->CurrentRow = StringToPositiveInt(RangeSpec+1) - 1;
 
     if (Range->CurrentRow == -1) return 0;
 
@@ -37,7 +37,7 @@ int InitRange(char *RangeSpec, range *Range) {
 
         if (*RHS) {
             Range->EndCell = RHS[0] - 'A';
-            Range->EndRow = StringToPositiveInt(RHS+1);
+            Range->EndRow = StringToPositiveInt(RHS+1) - 1;
             if (Range->EndRow == -1) return 0;
         }
         else {
@@ -128,9 +128,8 @@ char *EvaluateCell(document *Spreadsheet, cell *Cell) {
                             break;
                         }
                         else {
-                            /* TODO: get a real strtol */
-                            int i = StringToPositiveInt(C->Value);
-
+                            int i = StringToInt(C->Value, &RHS);
+                            /* TODO: check RHS for trailing characters */
                             Sum += i;
                         }
                     }

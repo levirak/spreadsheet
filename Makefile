@@ -36,3 +36,7 @@ tests: $(TESTS)
 .PHONY: clean
 clean:
 	rm -rf $(PROG_DIR) $(OBJECTS) $(TESTS)
+
+.PHONY: tags
+tags:
+	ctags -R src
