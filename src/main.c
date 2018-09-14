@@ -138,8 +138,6 @@ int main(int argc, char **argv) {
         }
     }
 
-    Debug("We have read the entire file into memory.");
-
     for (int i = 0; i < Spreadsheet->RowCount; ++i) {
         row *Row = Spreadsheet->Row + i;
         cell *Cell;
@@ -158,8 +156,6 @@ int main(int argc, char **argv) {
         Cell->Width = ColWidth[j];
         PrintStringCell(EvaluateCell(Spreadsheet, Cell), "\n", Cell->Width);
     }
-
-    Debug("We have finished printing the document.");
 
     FreeDocument(Spreadsheet);
     fclose(File);

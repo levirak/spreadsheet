@@ -1,11 +1,28 @@
 #:width 8 16
 #:print top_axis
 #:format string int
-A0	=sum(B1--)	=sum(C1--)
+A0	=sum(B1--)	=sum(C1--C2)	=sum(D1)
 #:begin body
-A1	1	=sum(C2--)
-A2	2	=sum(C3)
-A3	3	3
-A4	4
+A1	1	=sum(C2--C3)	=sum(D0)
+A2	2	=sum(C3--C4)
+A3	3	=sum(C4--C5)
+A4	4	=sum(C5--C6)
+A5	5	=sum(C6--C7)
+A6	6	=sum(C7--C8)
+A7	7	=sum(C8--C9)
+A8	8	=sum(C9--C10)
+A9	9	=sum(C10--C11)
+A10	10	=sum(C11--C12)
+A11	11	=sum(C12--C13)
+A12	12	=sum(C13--C14)
+A13	13	=sum(C14--C15)
+A14	14	=sum(C15--C16)
+A15	15	=sum(C16--C17)
+A16	16	=sum(C17--C18)
+A17	17	=sum(C18--C19)
+A18	18	=sum(C19--C20)
+A19	19	=sum(C20--C21)
+A20	20	1
+A21	21	0
 #
 # vim: ts=16 sw=16 noet

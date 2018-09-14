@@ -9,43 +9,45 @@
 #include <ctype.h>
 #include <limits.h>
 
-static int StartRow;
-static int StartCell;
-static int CurrentRow;
-static int CurrentCell;
-static int EndRow;
-static int EndCell;
+typedef struct range {
+    int StartRow;
+    int StartCell;
+    int CurrentRow;
+    int CurrentCell;
+    int EndRow;
+    int EndCell;
+} range;
 
 /* TODO: clean up the return structure to only return from one location */
 static inline
-int InitRange(char *RangeSpec) {
+int InitRange(char *RangeSpec, range *Range) {
     /* @TEMP: only 26 columns possible */
     if (!isupper(RangeSpec[0])) return 0;
     if (!isdigit(RangeSpec[1])) return 0;
 
     char *RHS = BreakAtChar(RangeSpec, '-');
 
-    StartCell = CurrentCell = RangeSpec[0] - 'A';
-    StartRow = CurrentRow = StringToPositiveInt(RangeSpec+1);
+    Range->StartCell = Range->CurrentCell = RangeSpec[0] - 'A';
+    Range->StartRow = Range->CurrentRow = StringToPositiveInt(RangeSpec+1);
 
-    if (CurrentRow == -1) return 0;
+    if (Range->CurrentRow == -1) return 0;
 
     if (*RHS == '-') {
         if (*RHS == '-') ++RHS;
 
         if (*RHS) {
-            EndCell = RHS[0] - 'A';
-            EndRow = StringToPositiveInt(RHS+1);
-            if (EndRow == -1) return 0;
+            Range->EndCell = RHS[0] - 'A';
+            Range->EndRow = StringToPositiveInt(RHS+1);
+            if (Range->EndRow == -1) return 0;
         }
         else {
-            EndCell = CurrentCell;
-            EndRow = INT_MAX;
+            Range->EndCell = Range->CurrentCell;
+            Range->EndRow = INT_MAX;
         }
     }
     else if (*RHS == '\0') {
-        EndRow = CurrentRow;
-        EndCell = CurrentCell;
+        Range->EndRow = Range->CurrentRow;
+        Range->EndCell = Range->CurrentCell;
     }
     else {
         Error("Unknown rangespec.");
@@ -56,29 +58,28 @@ int InitRange(char *RangeSpec) {
 }
 
 static inline
-int GetNextCell(document *Spreadsheet, cell **Cell) {
+int GetNextCell(document *Spreadsheet, range *Range, cell **Cell) {
     int IsValidCell = 0;
     *Cell = NULL;
 
-    if (CurrentRow > EndRow) {
-        CurrentRow = StartRow;
-        ++CurrentCell;
+    if (Range->CurrentRow > Range->EndRow) {
+        Range->CurrentRow = Range->StartRow;
+        ++Range->CurrentCell;
     }
 
-    if (CurrentCell <= EndCell && CurrentRow < Spreadsheet->RowCount) {
-        row *Row = Spreadsheet->Row + CurrentRow;
+    if (Range->CurrentCell <= Range->EndCell &&
+        Range->CurrentRow < Spreadsheet->RowCount) {
+        row *Row = Spreadsheet->Row + Range->CurrentRow;
 
         IsValidCell = 1;
 
-        if (CurrentCell < Row->CellCount) {
-            *Cell = Row->Cell + CurrentCell;
-            Info("getting Cell %c%d (%x).", 'A'+CurrentCell, CurrentRow,
-                 (*Cell)->Status);
+        if (Range->CurrentCell < Row->CellCount) {
+            *Cell = Row->Cell + Range->CurrentCell;
         }
 
     }
 
-    ++CurrentRow;
+    ++Range->CurrentRow;
 
     return IsValidCell;
 }
@@ -96,21 +97,21 @@ char *EvaluateCell(document *Spreadsheet, cell *Cell) {
     }
     else if (Cell->Status & CELL_FUNCTION) {
         Cell->Status |= CELL_EVALUATING;
-        Info("Evaluating Cell (%x)", Cell->Status);
 
         char *FunctionName = Cell->Value + 1;
         char *RHS = BreakAtChar(FunctionName, '(');
 
         if (CompareString(FunctionName, "sum") == 0) {
-            char *Range = RHS;
-            RHS = BreakAtChar(Range, ')');
+            range Range;
+            char *RangeSpec = RHS;
+            RHS = BreakAtChar(RangeSpec, ')');
             /* TODO: check RHS for trailing characters */
 
-            if (InitRange(Range)) {
+            if (InitRange(RangeSpec, &Range)) {
                 cell *C;
                 int Sum = 0;
 
-                while (GetNextCell(Spreadsheet, &C)) {
+                while (GetNextCell(Spreadsheet, &Range, &C)) {
                     EvaluateCell(Spreadsheet, C);
 
                     /* pretend that NULL cells evaluate to 0 */
@@ -129,7 +130,6 @@ char *EvaluateCell(document *Spreadsheet, cell *Cell) {
                         else {
                             /* TODO: get a real strtol */
                             int i = StringToPositiveInt(C->Value);
-                            Info("i = %d", i);
 
                             Sum += i;
                         }
