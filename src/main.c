@@ -37,6 +37,8 @@ int main(int argc, char **argv) {
     */
     int ColWidth[8];
 
+#   define DelimFor(C) ((C) != ArrayCount(ColWidth)-1? " ": "\n")
+
     /* TODO: true argument parsing */
     Check(argc == 2, "USAGE: %s FILE", argv[0]);
 
@@ -153,5 +155,6 @@ int main(int argc, char **argv) {
 error:
     if (Spreadsheet) FreeDocument(Spreadsheet);
     if (File) fclose(File);
+
     return 1;
 }

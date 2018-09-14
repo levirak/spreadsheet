@@ -8,6 +8,7 @@
 
 #include <ctype.h>
 #include <limits.h>
+#include <stdbool.h>
 
 typedef struct range {
     int StartRow;
@@ -20,41 +21,48 @@ typedef struct range {
 
 /* TODO: clean up the return structure to only return from one location */
 static inline
-int InitRange(char *RangeSpec, range *Range) {
+bool InitRange(char *RangeSpec, range *Range) {
     /* @TEMP: only 26 columns possible */
-    if (!isupper(RangeSpec[0])) return 0;
-    if (!isdigit(RangeSpec[1])) return 0;
+    bool IsValidCell = false;
 
-    char *RHS = BreakAtChar(RangeSpec, '-');
+    if (isupper(RangeSpec[0]) && isdigit(RangeSpec[1])) {
+        char *RHS = BreakAtChar(RangeSpec, '-');
 
-    Range->StartCell = Range->CurrentCell = RangeSpec[0] - 'A';
-    Range->StartRow = Range->CurrentRow = StringToPositiveInt(RangeSpec+1) - 1;
+        Range->StartCell = RangeSpec[0] - 'A';
+        Range->StartRow = StringToPositiveInt(RangeSpec+1) - 1;
 
-    if (Range->CurrentRow == -1) return 0;
+        Range->CurrentCell = Range->StartCell;
+        Range->CurrentRow = Range->StartRow;
 
-    if (*RHS == '-') {
-        if (*RHS == '-') ++RHS;
+        if (Range->CurrentRow > -1) {
+            if (*RHS == '-') {
+                IsValidCell = true;
 
-        if (*RHS) {
-            Range->EndCell = RHS[0] - 'A';
-            Range->EndRow = StringToPositiveInt(RHS+1) - 1;
-            if (Range->EndRow == -1) return 0;
+                if (*RHS == '-') ++RHS;
+
+                if (*RHS) {
+                    Range->EndCell = RHS[0] - 'A';
+                    Range->EndRow = StringToPositiveInt(RHS+1) - 1;
+                    if (Range->EndRow == -1) return 0;
+                }
+                else {
+                    Range->EndCell = Range->CurrentCell;
+                    Range->EndRow = INT_MAX;
+                }
+            }
+            else if (*RHS == '\0') {
+                IsValidCell = true;
+
+                Range->EndRow = Range->CurrentRow;
+                Range->EndCell = Range->CurrentCell;
+            }
+            else {
+                Error("Unknown rangespec.");
+            }
         }
-        else {
-            Range->EndCell = Range->CurrentCell;
-            Range->EndRow = INT_MAX;
-        }
-    }
-    else if (*RHS == '\0') {
-        Range->EndRow = Range->CurrentRow;
-        Range->EndCell = Range->CurrentCell;
-    }
-    else {
-        Error("Unknown rangespec.");
-        return 0;
     }
 
-    return 1;
+    return IsValidCell;
 }
 
 static inline
