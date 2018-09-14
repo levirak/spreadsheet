@@ -13,4 +13,6 @@
 #define IsCommandChar(C) ((C) == COMMAND_CHAR)
 #define IsEvalChar(C) ((C) == EVAL_CHAR)
 
+#define fallthrough __attribute__((fallthrough));
+
 #endif

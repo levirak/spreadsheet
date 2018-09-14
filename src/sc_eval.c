@@ -10,7 +10,7 @@
 #include <limits.h>
 #include <stdbool.h>
 
-typedef struct range {
+typedef struct {
     int StartRow;
     int StartCell;
     int CurrentRow;
@@ -19,46 +19,68 @@ typedef struct range {
     int EndCell;
 } range;
 
-/* TODO: clean up the return structure to only return from one location */
+static inline
+bool IsReference(char *RefSpec) {
+    /* @TEMP: only 26 columns possible */
+    bool Result = isupper(RefSpec[0]) && isdigit(RefSpec[1]);
+    /* TODO: Continue on to show that this is a well formed refenerce */
+    return Result;
+}
+
+static inline
+cell *GetCell(document *Sheet, char *RefSpec) {
+    cell *Cell = NULL;
+
+    int RowIdx = StringToPositiveInt(RefSpec+1) - 1;
+
+    if (RowIdx != -1 && RowIdx < Sheet->RowCount) {
+        row *Row = Sheet->Row + RowIdx;
+        int CellIdx = *RefSpec - 'A';
+
+        if (CellIdx < Row->CellCount) {
+            Cell = Row->Cell + CellIdx;
+        }
+    }
+
+    return Cell;
+}
+
+
 static inline
 bool InitRange(char *RangeSpec, range *Range) {
     /* @TEMP: only 26 columns possible */
     bool IsValidCell = false;
+    char *RHS;
 
-    if (isupper(RangeSpec[0]) && isdigit(RangeSpec[1])) {
-        char *RHS = BreakAtChar(RangeSpec, '-');
-
+    if (IsReference(RangeSpec)) {
         Range->StartCell = RangeSpec[0] - 'A';
-        Range->StartRow = StringToPositiveInt(RangeSpec+1) - 1;
+        Range->StartRow = StringToInt(RangeSpec+1, &RHS) - 1;
 
         Range->CurrentCell = Range->StartCell;
         Range->CurrentRow = Range->StartRow;
 
-        if (Range->CurrentRow > -1) {
-            if (*RHS == '-') {
-                IsValidCell = true;
+        if (*RHS == ':') {
+            IsValidCell = true;
 
-                if (*RHS == '-') ++RHS;
-
-                if (*RHS) {
-                    Range->EndCell = RHS[0] - 'A';
-                    Range->EndRow = StringToPositiveInt(RHS+1) - 1;
-                    if (Range->EndRow == -1) return 0;
-                }
-                else {
-                    Range->EndCell = Range->CurrentCell;
-                    Range->EndRow = INT_MAX;
-                }
-            }
-            else if (*RHS == '\0') {
-                IsValidCell = true;
-
-                Range->EndRow = Range->CurrentRow;
-                Range->EndCell = Range->CurrentCell;
+            ++RHS;
+            if (*RHS) {
+                Range->EndCell = RHS[0] - 'A';
+                Range->EndRow = StringToPositiveInt(RHS+1) - 1;
+                if (Range->EndRow == -1) return 0;
             }
             else {
-                Error("Unknown rangespec.");
+                Range->EndCell = Range->CurrentCell;
+                Range->EndRow = INT_MAX;
             }
+        }
+        else if (*RHS == '\0') {
+            IsValidCell = true;
+
+            Range->EndRow = Range->CurrentRow;
+            Range->EndCell = Range->CurrentCell;
+        }
+        else {
+            Error("Unknown rangespec.");
         }
     }
 
@@ -109,7 +131,65 @@ char *EvaluateCell(document *Spreadsheet, cell *Cell) {
         char *FunctionName = Cell->Value + 1;
         char *RHS = BreakAtChar(FunctionName, '(');
 
-        if (CompareString(FunctionName, "sum") == 0) {
+        /* TODO: make a true and proper expression language.
+         *
+         * By this, I mean that roughly all of the following should work at
+         * some point in the future:
+         *      =A3
+         *      =A3/A2
+         *      =-A3
+         *      =Sum(A3:A7)
+         *      =Sum(A3:A7)/Count(A3:A7)
+         *      =Sum(A3:A7)/N(A3:A7)
+         *      =Average(A3:A7)
+         *      =Avg(A3:A7)
+         *      =A3 + 2
+         *      =20% * A3
+         *      =1/4
+         *      =5
+         *      =@r1
+         *      ={./other.tsv:A1}
+         *      ={june.tsv:A1}
+         *      ={/path/to/sheet.tsv:A1}
+         *      ={#1:A1}
+         *
+         * The spec would basically be that---
+         *      FN      := [a-zA-Z]+ '(' ARGUMENTS ')'
+         *      ABS_REF := [A-Z]+[0-9]+
+         *      REL_REF := '@'([ud][0-9]+)?([lr][0-9]+)?
+         *      EX_REF  := '{'PATH'.'RANGE'}'
+         *              |  '{#'ID':'RANGE'}'
+         *      IN_REF  := ABS_REF | REL_REF
+         *      REF     := IN_REF | EX_REF
+         *      NUM     := [+-]?[0-9]+
+         *              |  [+-]?[0-9]*'.'[0-9]+
+         *              |  [+-]?[0-9]+'%'
+         *      EXPR    := FN | REF | NUM
+         *              |  EXPR [+-*^/] EXPR
+         *              |  '(' EXPR ')'
+         *      RANGE   := REF
+         *              |  IN_REF':'IN_REF
+         *              |  IN_REF':'[udlr]?
+         *      LIST    := RANGE (';' RANGE)*
+         *      COMP    := EXPR ('<' | '<=' | '=' | '=>' | '>' | '<>') EXPR
+         *              |  COMP ('&&'|'||') COMP
+         *              |  '(' COMP ')'
+         *      ID_DEF  := '#:import' PATH
+         * We would then expect to find an EXPR (expression) in any cell
+         * starting with '='
+         *
+         * edit: yeah, "basically" like that
+         */
+
+        if (IsReference(FunctionName)) {
+            cell *C = GetCell(Spreadsheet, FunctionName);
+
+            if (C) {
+                char *Value = EvaluateCell(Spreadsheet, C);
+                BufferString(Cell->Value, ArrayCount(Cell->Value), Value);
+            }
+        }
+        else if (CompareString(FunctionName, "sum") == 0) {
             range Range;
             char *RangeSpec = RHS;
             RHS = BreakAtChar(RangeSpec, ')');

@@ -1,23 +1,23 @@
-sum of ints	fibinacci	cylce
-=sum(A3--)	=sum(B3--B4)	=sum(C3)
-1	=sum(B4--B5)	=sum(C2)
-2	=sum(B5--B6)
-3	=sum(B6--B7)
-4	=sum(B7--B8)
-5	=sum(B8--B9)
-6	=sum(B9--B10)
-7	=sum(B10--B11)	aoeu
-8	=sum(B11--B12)
-9	=sum(B12--B13)	=sum(C12--)
-10	=sum(B13--B14)	-1
-11	=sum(B14--B15)	-2
-12	=sum(B15--B16)
-13	=sum(B16--B17)
-14	=sum(B17--B18)
-15	=sum(B18--B19)
-16	=sum(B19--B20)
-17	=sum(B20--B21)
-18	=sum(B21--B22)
+sum of ints	fibinacci	cylce1	cylce2
+=sum(A3:)	=sum(B3:B4)	=sum(C3)	=C3
+1	=sum(B4:B5)	=sum(C2)	=sum(C2)
+2	=sum(B5:B6)
+3	=sum(B6:B7)
+4	=sum(B7:B8)
+5	=sum(B8:B9)
+6	=sum(B9:B10)
+7	=sum(B10:B11)
+8	=sum(B11:B12)	=sum(C12:)
+9	=sum(B12:B13)	--------
+10	=sum(B13:B14)	-1
+11	=sum(B14:B15)	-2
+12	=sum(B15:B16)
+13	=sum(B16:B17)
+14	=sum(B17:B18)	=C13
+15	=sum(B18:B19)
+16	=sum(B19:B20)
+17	=sum(B20:B21)	-3
+18	=sum(B21:B22)
 19	1
 20	0
 #:width 16 16

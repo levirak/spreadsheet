@@ -10,6 +10,7 @@
 #include <stdbool.h>
 
 /* basically a sparse lookup table */
+static inline
 int DecimalWidth(unsigned int Num) {
     int Width; // Maximum width Num could take
 
