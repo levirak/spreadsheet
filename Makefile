@@ -1,42 +1,57 @@
-PROG_NAME=      spreadsheet
-PROG_DIR=       build
+program_name = spreadsheet
+build_dir    = build
+source_dir   = src
+test_dir     = tests
+main         = main.c
 
-MAIN=           src/main.c
+CPPDIRS = -Isrc
+LDDIRS  =
+LDLIBS  =
 
-CFLAGS =        -g -Wall -Wextra -Isrc $(OPTFLAGS) # -fsanitize=address,undefined
-LDFLAGS=        
-LDLIBS=         $(OBJECTS)
+OPTFLAGS := $(CFLAGS)
+override CPPFLAGS := $(CPPFLAGS) $(CPPDIRS)
+override CFLAGS   := -g -Wall -Wextra $(CFLAGS) # -fsanitize=address,undefined
+override LDFLAGS  := $(LDFLAGS) $(LDDIRS)
 
-SOURCES=        $(filter-out $(MAIN),$(wildcard src/**/*.c src/*.c))
-OBJECTS=        $(patsubst %.c,%.o,$(SOURCES))
-
-TEST_SRC=       $(wildcard tests/*_tests.c)
-TESTS=          $(patsubst %.c,%,$(TEST_SRC))
-
-TARGET=         $(PROG_DIR)/$(PROG_NAME)
+sources      = $(wildcard $(source_dir)/**/*.c $(source_dir)/*.c)
+objects      = $(sources:.c=.o)
+test_sources = $(wildcard $(test_dir)/*_tests.c)
+tests        = $(test_sources:.c=)
+deps         = $(sources:.c=.mk)
+test_deps    = $(test_sources:.c=.mk)
+target       = $(build_dir)/$(program_name)
 
 
 # The Target Build
-all: $(TARGET) tests
+all: $(target) tests
 
-release: CFLAGS= -O2 -Wall -Wextra -Isrc -DNDEBUG $(OPTFLAGS)
-release: all
+release: CFLAGS := -O2 -Wall -Wextra -Isrc -DNDEBUG $(OPTFLAGS)
+release: $(target)
 
-$(TARGET): $(MAIN) $(OBJECTS) $(PROG_DIR)
-	$(CC) $(CFLAGS) -o $@ $< $(LDFLAGS) $(LDLIBS)
+-include $(deps) $(test_deps)
+$(deps): %.mk: %.c
+	$(CPP) $(CPPFLAGS) $< -MM -MT $(@:.mk=.o) >$@
+$(test_deps): %.mk: %.c
+	$(CPP) $(CPPFLAGS) $< -MM -MT $(@:.mk=) >$@
 
-$(PROG_DIR):
-	@mkdir -p $(PROG_DIR)
-	@mkdir -p bin
+$(target): $(objects) | $(build_dir)
+	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS) $(LDLIBS)
+
+$(build_dir):
+	@mkdir -p $@
 
 .PHONY: tests
-tests: $(TESTS)
-	@sh ./tests/runtests.sh
+$(tests): %: %.c
+	$(CC) $(CFLAGS) -o $@ $< $(LDFLAGS) $(LDLIBS)
+
+tests: CFLAGS += $(CPPFLAGS)
+tests: $(tests)
+	@sh ./$(test_dir)/runtests.sh
 
 .PHONY: clean
 clean:
-	rm -rf $(PROG_DIR) $(OBJECTS) $(TESTS)
+	rm -rf $(build_dir) $(objects) $(deps) $(tests)
 
 .PHONY: tags
 tags:
-	ctags -R src
+	ctags -R $(source_dir)

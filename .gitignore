@@ -9,6 +9,8 @@
 #src
 /src/*.o
 /src/**/*.o
+/src/*.mk
+/src/**/*.mk
 
 #tests
 /tests/*
