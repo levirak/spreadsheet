@@ -11,6 +11,7 @@ char *SkipSpaces(char *String);
 char *BreakOffWord(char *String);
 #define BreakOffCell(S) BreakAtChar((S), DELIM_CHAR)
 char *BreakAtChar(char *String, char Delim);
+char *BreakAtLastChar(char *String, char Delim);
 char *FindChar(char *String, char Delim);
 int CompareString(char *A, char *B);
 char *Strip(char *String);

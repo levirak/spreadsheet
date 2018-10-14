@@ -67,6 +67,20 @@ char *BreakAtChar(char *Str, char Delim) {
     return Str;
 }
 
+char *BreakAtLastChar(char *Str, char Delim) {
+    char *Hold;
+
+    for (Hold = NULL; *Str; ++Str) {
+        if (*Str == Delim) {
+            Hold = Str;
+        }
+    }
+
+    if (Hold) *Hold++ = '\0';
+
+    return Hold;
+}
+
 char *FindChar(char *Str, char Delim) {
     while (*Str && *Str != Delim) ++Str;
     return Str;

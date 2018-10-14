@@ -10,7 +10,6 @@
 #include <stdbool.h>
 
 /* basically a sparse lookup table */
-static inline
 int DecimalWidth(unsigned int Num) {
     int Width; // Maximum width Num could take
 
@@ -30,136 +29,54 @@ int DecimalWidth(unsigned int Num) {
 }
 
 int main(int argc, char **argv) {
-    char Buffer[1024];
-    FILE *File = NULL;
-    document *Spreadsheet = NULL;
-
-    bool PrintTopAxis = false;
-    bool PrintSideAxis = false;
-
-    /* @TEMP: this row count
-    * Note that for now there can be now more than 26 rows.
-    */
-    int ColWidth[8];
-
-#   define DelimFor(C) ((C) != ArrayCount(ColWidth)-1? " ": "\n")
+    document *Sheet = NULL;
 
     /* TODO: true argument parsing */
     Check(argc == 2, "USAGE: %s FILE", argv[0]);
 
-    Check(File = fopen(argv[1], "r"), "failed to open file");
+    char *FileName = argv[1];
+    Check(Sheet = ReadSheet(FileName), "failed to open file");
 
-    /* initialize ColWidth */
-    for (size_t i = 0; i < ArrayCount(ColWidth); ++i) {
-        ColWidth[i] = 8;
-    }
+    int Margin = DecimalWidth(Sheet->RowCount);
 
-    Spreadsheet = AllocDocument();
-
-    while (GetLine(Buffer, ArrayCount(Buffer), File) > 0) {
-        int Column = 0;
-        char *RHS = Buffer;
-
-        if (IsCommentChar(RHS[0])) {
-            /* NOTE: at least for now, the comment character must be the first
-            * character of the line to count as a comment */
-
-            if (IsCommandChar(RHS[1])) {
-                char *Word = RHS + 2;
-                RHS = BreakOffWord(Word);
-
-                /* process commands */
-
-                if (CompareString(Word, "width") == 0) {
-                    while (*RHS) {
-                        RHS = BreakOffWord(Word = RHS);
-
-                        /* TODO: check for errors from strtol */
-                        ColWidth[Column++] = strtol(Word, NULL, 0);
-                    }
-                }
-                else if (CompareString(Word, "print") == 0) {
-                    RHS = BreakOffWord(Word = RHS);
-
-                    if (CompareString(Word, "top_axis") == 0) {
-                        PrintTopAxis = true;
-                    }
-                    else if (CompareString(Word, "side_axis") == 0) {
-                        PrintSideAxis = true;
-                    }
-                    else if (CompareString(Word, "width") == 0) {
-                        for (size_t i = 0; i < ArrayCount(ColWidth); ++i) {
-                            int Width = ColWidth[i];
-                            PrintNumCell(Width, DelimFor(i), Width);
-                        }
-                    }
-                }
-                else {
-                    Error("Unknown command :%s", Word);
-                }
-            }
-        }
-        else {
-            char *String;
-            row *Row = GetNewRow(Spreadsheet);
-
-            while (*RHS) {
-                RHS = BreakOffCell(String = RHS);
-
-                cell *Cell = GetNewCell(Row);
-
-                if (IsEvalChar(String[0])) {
-                    Cell->Status |= CELL_FUNCTION;
-                }
-
-                BufferString(Cell->Value, ArrayCount(Cell->Value), String);
-            }
-        }
-    }
-
-    int Margin = DecimalWidth(Spreadsheet->RowCount);
-
-    if (PrintTopAxis) {
-        if (PrintSideAxis) {
+    if (Sheet->PrintTopAxis) {
+        if (Sheet->PrintSideAxis) {
             printf("%*s  ", Margin, "");
         }
 
-        for (size_t i = 0; i < ArrayCount(ColWidth); ++i) {
-            char Name[2] = { 0};
-            Name[0] = 'A' + i;
-            PrintStringCell(Name, DelimFor(i), ColWidth[i]);
+        for (size_t i = 0; i < ArrayCount(Sheet->ColWidth); ++i) {
+            char Name[2] = { 'A'+i, 0 };
+            PrintStringCell(Name, DelimFor(Sheet, i), Sheet->ColWidth[i]);
         }
     }
 
-    for (int i = 0; i < Spreadsheet->RowCount; ++i) {
-        row *Row = Spreadsheet->Row + i;
+    for (int i = 0; i < Sheet->RowCount; ++i) {
+        row *Row = Sheet->Row + i;
         cell *Cell;
         int j;
 
-        if (PrintSideAxis) {
+        if (Sheet->PrintSideAxis) {
             printf("%*d  ", Margin, i+1);
         }
 
         for (j = 0; j < Row->CellCount - 1; ++j) {
             Cell = Row->Cell + j;
-            Cell->Width = ColWidth[j];
+            Cell->Width = Sheet->ColWidth[j];
 
-            PrintStringCell(EvaluateCell(Spreadsheet, Cell), " ", Cell->Width);
+            PrintStringCell(EvaluateCell(Sheet, Cell), " ", Cell->Width);
         }
 
         Cell = Row->Cell + j;
-        Cell->Width = ColWidth[j];
-        PrintStringCell(EvaluateCell(Spreadsheet, Cell), "\n", Cell->Width);
+        Cell->Width = Sheet->ColWidth[j];
+        PrintStringCell(EvaluateCell(Sheet, Cell), "\n", Cell->Width);
     }
 
-    FreeDocument(Spreadsheet);
-    fclose(File);
+    FreeDocument(Sheet);
 
     return 0;
 
 error:
-    if (Spreadsheet) FreeDocument(Spreadsheet);
-    if (File) fclose(File);
+    if (Sheet) FreeDocument(Sheet);
 
     return 1;
 }

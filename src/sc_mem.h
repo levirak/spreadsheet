@@ -2,6 +2,9 @@
 #define __sc_mem__
 
 #include <stddef.h>
+#include <stdbool.h>
+
+#include <fcntl.h>
 
 #define DEFAULT_CELL_WIDTH 8
 
@@ -28,9 +31,20 @@ typedef struct document {
     row *Row;
     int RowCap;
     int RowCount;
+
+    bool PrintTopAxis;
+    bool PrintSideAxis;
+    /* @TEMP: this row count
+    * Note that for now there can be now more than 26 rows.
+    */
+    int ColWidth[8];
+
+    int DirFD;
 } document;
 
-document *AllocDocument();
+
+#define ReadSheet(P) ReadSheetAt(AT_FDCWD, P)
+document *ReadSheetAt(int FD, char *FileName);
 void FreeDocument(document *);
 
 row *GetNewRow(document *Root);

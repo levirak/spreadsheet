@@ -10,6 +10,9 @@
 #include <limits.h>
 #include <stdbool.h>
 
+#include <fcntl.h>
+#include <unistd.h>
+
 typedef struct {
     int StartRow;
     int StartCell;
@@ -88,7 +91,7 @@ bool InitRange(char *RangeSpec, range *Range) {
 }
 
 static inline
-int GetNextCell(document *Spreadsheet, range *Range, cell **Cell) {
+int GetNextCell(document *Sheet, range *Range, cell **Cell) {
     int IsValidCell = 0;
     *Cell = NULL;
 
@@ -98,8 +101,8 @@ int GetNextCell(document *Spreadsheet, range *Range, cell **Cell) {
     }
 
     if (Range->CurrentCell <= Range->EndCell &&
-        Range->CurrentRow < Spreadsheet->RowCount) {
-        row *Row = Spreadsheet->Row + Range->CurrentRow;
+        Range->CurrentRow < Sheet->RowCount) {
+        row *Row = Sheet->Row + Range->CurrentRow;
 
         IsValidCell = 1;
 
@@ -115,14 +118,12 @@ int GetNextCell(document *Spreadsheet, range *Range, cell **Cell) {
 }
 
 #define MAX_BUFFER ArrayCount(((cell *)0)->Value)
-char *EvaluateCell(document *Spreadsheet, cell *Cell) {
+char *EvaluateCell(document *Sheet, cell *Cell) {
     if (!Cell) return NULL;
 
     if (Cell->Status & CELL_EVALUATING) {
         Cell->Status |= CELL_CAUSE_ERROR;
 
-        /* TODO: better error message */
-        Error("Cycle detected.");
         BufferString(Cell->Value, ArrayCount(Cell->Value), "E:cycle");
     }
     else if (Cell->Status & CELL_FUNCTION) {
@@ -151,41 +152,69 @@ char *EvaluateCell(document *Spreadsheet, cell *Cell) {
          *      ={./other.tsv:A1}
          *      ={june.tsv:A1}
          *      ={/path/to/sheet.tsv:A1}
-         *      ={#1:A1}
          *
          * The spec would basically be that---
-         *      FN      := [a-zA-Z]+ '(' ARGUMENTS ')'
-         *      ABS_REF := [A-Z]+[0-9]+
-         *      REL_REF := '@'([ud][0-9]+)?([lr][0-9]+)?
-         *      EX_REF  := '{'PATH'.'RANGE'}'
-         *              |  '{#'ID':'RANGE'}'
-         *      IN_REF  := ABS_REF | REL_REF
-         *      REF     := IN_REF | EX_REF
-         *      NUM     := [+-]?[0-9]+
-         *              |  [+-]?[0-9]*'.'[0-9]+
-         *              |  [+-]?[0-9]+'%'
-         *      EXPR    := FN | REF | NUM
-         *              |  EXPR [+-*^/] EXPR
-         *              |  '(' EXPR ')'
-         *      RANGE   := REF
-         *              |  IN_REF':'IN_REF
-         *              |  IN_REF':'[udlr]?
-         *      LIST    := RANGE (';' RANGE)*
-         *      COMP    := EXPR ('<' | '<=' | '=' | '=>' | '>' | '<>') EXPR
-         *              |  COMP ('&&'|'||') COMP
-         *              |  '(' COMP ')'
-         *      ID_DEF  := '#:import' PATH
+         *      FN       := [a-zA-Z]+ '(' ARGUMENTS ')'
+         *      ABS_REF  := [A-Z]+[0-9]+
+         *      REL_REF  := '@'([ud][0-9]+)?([lr][0-9]+)?
+         *      EX_REF   := '{' PATH '.' IN_RANGE '}'
+         *      IN_REF   := ABS_REF | REL_REF
+         *      REF      := IN_REF | EX_REF
+         *      NUM      := [+-]?[0-9]+
+         *               |  [+-]?[0-9]*'.'[0-9]+
+         *               |  [+-]?[0-9]+'%'
+         *      EXPR     := FN | REF | NUM
+         *               |  EXPR [+-*^/] EXPR
+         *               |  '(' EXPR ')'
+         *      IN_RANGE := IN_REF':'IN_REF
+         *               |  IN_REF':'[udlr]?
+         *      RANGE    := REF | IN_RANGE
+         *      LIST     := RANGE (';' RANGE)*
+         *      COMP     := EXPR ('<' | '<=' | '=' | '=>' | '>' | '<>') EXPR
+         *               |  COMP ('&&'|'||') COMP
+         *               |  '(' COMP ')'
          * We would then expect to find an EXPR (expression) in any cell
          * starting with '='
          *
          * edit: yeah, "basically" like that
          */
 
-        if (IsReference(FunctionName)) {
-            cell *C = GetCell(Spreadsheet, FunctionName);
+        if (FunctionName[0] == '{') {
+            size_t Size = ArrayCount(Cell->Value);
+            char *RHS = BreakAtLastChar(FunctionName, '}');
+            if (RHS) {
+                ++FunctionName;
+                RHS = BreakAtLastChar(FunctionName, ':');
+
+                if (RHS && IsReference(RHS)) {
+                    document *Sub = ReadSheetAt(Sheet->DirFD, FunctionName);
+                    if (Sub) {
+                        char *Value = EvaluateCell(Sub, GetCell(Sub, RHS));
+
+                        BufferString(Cell->Value, Size, Value);
+
+                        FreeDocument(Sub);
+                    }
+                    else {
+                        Cell->Status |= CELL_ERROR;
+                        BufferString(Cell->Value, Size, "E:no file");
+                    }
+                }
+                else {
+                    Cell->Status |= CELL_ERROR;
+                    BufferString(Cell->Value, Size, "E:no ref");
+                }
+            }
+            else {
+                Cell->Status |= CELL_ERROR;
+                BufferString(Cell->Value, Size, "E:unclosed");
+            }
+        }
+        else if (IsReference(FunctionName)) {
+            cell *C = GetCell(Sheet, FunctionName);
 
             if (C) {
-                char *Value = EvaluateCell(Spreadsheet, C);
+                char *Value = EvaluateCell(Sheet, C);
                 BufferString(Cell->Value, ArrayCount(Cell->Value), Value);
             }
         }
@@ -199,8 +228,8 @@ char *EvaluateCell(document *Spreadsheet, cell *Cell) {
                 cell *C;
                 int Sum = 0;
 
-                while (GetNextCell(Spreadsheet, &Range, &C)) {
-                    EvaluateCell(Spreadsheet, C);
+                while (GetNextCell(Sheet, &Range, &C)) {
+                    EvaluateCell(Sheet, C);
 
                     /* pretend that NULL cells evaluate to 0 */
                     if (C) {

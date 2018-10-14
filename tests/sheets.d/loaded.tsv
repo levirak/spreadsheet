@@ -1,0 +1,5 @@
+A1	A2	A3	A4
+#:width 16 16
+#:print top_axis
+#:print side_axis
+# vim: ts=16 sw=16 noet

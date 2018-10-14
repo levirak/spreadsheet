@@ -2,7 +2,6 @@ program_name = spreadsheet
 build_dir    = build
 source_dir   = src
 test_dir     = tests
-main         = main.c
 
 CPPDIRS = -Isrc
 LDDIRS  =
