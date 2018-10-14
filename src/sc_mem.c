@@ -89,7 +89,7 @@ document *ReadSheetAt(int DirFD, char *FileName) {
                         Sheet->Properties |= DOC_PRINT_TOP;
                     }
                     else if (CompareString(Word, "side_axis") == 0) {
-                        Sheet->Properties |= DOC_PRINT_TOP;
+                        Sheet->Properties |= DOC_PRINT_SIDE;
                     }
                     else if (CompareString(Word, "width") == 0) {
                         size_t Count = ArrayCount(Sheet->ColWidth);
