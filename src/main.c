@@ -7,7 +7,6 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <stdbool.h>
 
 /* basically a sparse lookup table */
 int DecimalWidth(unsigned int Num) {
@@ -39,8 +38,8 @@ int main(int argc, char **argv) {
 
     int Margin = DecimalWidth(Sheet->RowCount);
 
-    if (Sheet->PrintTopAxis) {
-        if (Sheet->PrintSideAxis) {
+    if (Sheet->Properties & DOC_PRINT_TOP) {
+        if (Sheet->Properties & DOC_PRINT_SIDE) {
             printf("%*s  ", Margin, "");
         }
 
@@ -55,7 +54,7 @@ int main(int argc, char **argv) {
         cell *Cell;
         int j;
 
-        if (Sheet->PrintSideAxis) {
+        if (Sheet->Properties & DOC_PRINT_SIDE) {
             printf("%*d  ", Margin, i+1);
         }
 

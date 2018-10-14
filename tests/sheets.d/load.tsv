@@ -1,4 +1,9 @@
-A1	A2	A3	A4
+A1	=sum(B2:)
+	1
+	1
+	1
+	1
+	1
 #:width 16 16
 #:print top_axis
 #:print side_axis

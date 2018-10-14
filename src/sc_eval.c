@@ -181,12 +181,15 @@ char *EvaluateCell(document *Sheet, cell *Cell) {
 
         if (FunctionName[0] == '{') {
             size_t Size = ArrayCount(Cell->Value);
+
             char *RHS = BreakAtLastChar(FunctionName, '}');
             if (RHS) {
                 ++FunctionName;
                 RHS = BreakAtLastChar(FunctionName, ':');
 
                 if (RHS && IsReference(RHS)) {
+                    /* TODO: cache this document (?), so that multiple
+                     * references don't pull it in freash every time */
                     document *Sub = ReadSheetAt(Sheet->DirFD, FunctionName);
                     if (Sub) {
                         char *Value = EvaluateCell(Sub, GetCell(Sub, RHS));
@@ -197,12 +200,12 @@ char *EvaluateCell(document *Sheet, cell *Cell) {
                     }
                     else {
                         Cell->Status |= CELL_ERROR;
-                        BufferString(Cell->Value, Size, "E:no file");
+                        BufferString(Cell->Value, Size, "E:nofile");
                     }
                 }
                 else {
                     Cell->Status |= CELL_ERROR;
-                    BufferString(Cell->Value, Size, "E:no ref");
+                    BufferString(Cell->Value, Size, "E:noref");
                 }
             }
             else {

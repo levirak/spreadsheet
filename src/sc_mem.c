@@ -5,7 +5,6 @@
 #include <sc_strings.h>
 
 #include <stdlib.h>
-#include <stdbool.h>
 
 #include <unistd.h>
 #include <sys/stat.h>
@@ -21,8 +20,6 @@ document *AllocDocument() {
         .RowCap = INITIAL_ROW_CAP,
         .RowCount = 0,
         .Row = malloc(sizeof *Document->Row * INITIAL_ROW_CAP),
-        .PrintTopAxis = false,
-        .PrintSideAxis = false,
     };
 
     for (size_t i = 0; i < ArrayCount(Document->ColWidth); ++i) {
@@ -60,7 +57,7 @@ document *ReadSheetAt(int DirFD, char *FileName) {
         }
     }
     else {
-        Sheet->DirFD = DirFD;
+        Sheet->DirFD = dup(DirFD);
     }
 
     while (GetLine(Buffer, ArrayCount(Buffer), File) > 0) {
@@ -89,10 +86,10 @@ document *ReadSheetAt(int DirFD, char *FileName) {
                     RHS = BreakOffWord(Word = RHS);
 
                     if (CompareString(Word, "top_axis") == 0) {
-                        Sheet->PrintTopAxis = true;
+                        Sheet->Properties |= DOC_PRINT_TOP;
                     }
                     else if (CompareString(Word, "side_axis") == 0) {
-                        Sheet->PrintSideAxis = true;
+                        Sheet->Properties |= DOC_PRINT_TOP;
                     }
                     else if (CompareString(Word, "width") == 0) {
                         size_t Count = ArrayCount(Sheet->ColWidth);

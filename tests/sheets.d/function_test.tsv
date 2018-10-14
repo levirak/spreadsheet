@@ -1,13 +1,13 @@
-sum of ints	fibinacci	cylce1	cylce2
-=sum(A3:)	0	=sum(C3)	=C3
-1	1	=sum(C2)	=sum(C2)
-2	=sum(B2:B3)
-3	=sum(B3:B4)			file ref
-4	=sum(B4:B5)			={./loaded.tsv:A1}
-5	=sum(B5:B6)			={
-6	=sum(B6:B7)			={}
-7	=sum(B7:B8)			={:}
-8	=sum(B8:B9)	=sum(C12:)		={./loaded.tsv}
+sum of ints	fibinacci	cylce1	cylce2	file ref
+=sum(A3:)	0	=sum(C3)	=C3	={load.tsv:A1}	={load.tsv:B1}
+1	1	=sum(C2)	=sum(C2)	={
+2	=sum(B2:B3)			={}
+3	=sum(B3:B4)			={:}
+4	=sum(B4:B5)			={load.tsv}
+5	=sum(B5:B6)
+6	=sum(B6:B7)
+7	=sum(B7:B8)
+8	=sum(B8:B9)	=sum(C12:)
 9	=sum(B9:B10)	--------
 10	=sum(B10:B11)	-1
 11	=sum(B11:B12)	-2
@@ -20,7 +20,7 @@ sum of ints	fibinacci	cylce1	cylce2
 18	=sum(B18:B19)
 19	=sum(B19:B20)
 20	=sum(B20:B21)
-#:width 16 16 8 8 16
+#:width 16 16 8 8 16 16
 #:print top_axis
 #:print side_axis
 # vim: ts=16 sw=16 noet
