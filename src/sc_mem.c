@@ -113,8 +113,14 @@ document *ReadSheetAt(int DirFD, char *FileName) {
 
                 cell *Cell = GetNewCell(Row);
 
-                if (IsEvalChar(String[0])) {
-                    Cell->Status |= CELL_FUNCTION;
+                if (StringSize(String) < ArrayCount(Cell->Value)) {
+                    if (IsEvalChar(String[0])) {
+                        Cell->Status |= CELL_FUNCTION;
+                    }
+                }
+                else {
+                    Cell->Status |= CELL_ERROR;
+                    String = "E:long";
                 }
 
                 BufferString(Cell->Value, ArrayCount(Cell->Value), String);

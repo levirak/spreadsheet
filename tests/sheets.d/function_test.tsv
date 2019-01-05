@@ -1,17 +1,17 @@
 sum of ints	fibinacci	cylce1	good file refs
-=sum(A3:)	0	=sum(C3)	={load.tsv:A1}	={load.tsv:B1}
+=sum(A3:)	0	=sum(C3)	={load.tsv:A1}	={load.tsv:B1}	={/home/levi/Programs/spreadsheet/tests/sheets.d/load.tsv:B1}		X
 1	1	=sum(C2)
 2	=sum(B2:B3)		bad file refs
 3	=sum(B3:B4)	cylce2	={	={dne.tsv:A1}
-4	=sum(B4:B5)	=C	={}
+4	=sum(B4:B5)	=C6	={}
 5	=sum(B5:B6)	=sum(C2)	={:}3
 6	=sum(B6:B7)		={load.tsv}
 7	=sum(B7:B8)
-8	=sum(B8:B9)	=sum(C12:)
-9	=sum(B9:B10)	--------
-10	=sum(B10:B11)	-1
-11	=sum(B11:B12)	-2
-12	=sum(B12:B13)
+8	=sum(B8:B9)	=sum(C12:)		float sum
+9	=sum(B9:B10)	--------		=sum(E12:)
+10	=sum(B10:B11)	-1		1.5
+11	=sum(B11:B12)	-2		2.5
+12	=sum(B12:B13)			-2
 13	=sum(B13:B14)
 14	=sum(B14:B15)	=C13
 15	=sum(B15:B16)

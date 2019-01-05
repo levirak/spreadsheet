@@ -11,7 +11,7 @@ enum cell_status_flags {
     CELL_FUNCTION    = 0x01,
     CELL_EVALUATING  = 0x02,
     CELL_ERROR       = 0x04,
-    CELL_CAUSE_ERROR = 0x08,
+    CELL_CLOSE_CYCLE = 0x08,
 };
 
 enum document_property_flags {
@@ -22,7 +22,7 @@ enum document_property_flags {
 typedef struct cell {
     int Status;
     int Width;
-    char Value[32]; /* TEMP? */
+    char Value[32]; /* TEMP! */
 } cell;
 
 typedef struct row {

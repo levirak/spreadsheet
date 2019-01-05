@@ -44,6 +44,12 @@ int GlyphCount(char *Str) {
     return count;
 }
 
+size_t StringSize(char *Str) {
+    char *Cur = Str;
+    while (*Cur) ++Cur;
+    return (size_t)Cur - (size_t)Str;
+}
+
 char *SkipWord(char *Str) {
     while (*Str && !isspace(*Str)) ++Str;
     return Str;
@@ -107,19 +113,25 @@ char *Strip(char *Str) {
     return Str;
 }
 
-void PrintStringCell(char *cell, char *delim, int width) {
-    /* TODO: glyphs with double width */
-    int count = 0;
-    for (char *Cur = cell; *Cur; ++Cur) {
-        count += ((*Cur & '\xc0') != '\x80');
-        if (count > width) {
+void PrintStringCell(char *Cell, char *Delim, int Width) {
+    char *Cur;
+    char Deleted = '\0';
+    int Count = 0;
+    for (Cur = Cell; *Cur; ++Cur) {
+        Count += ((*Cur & '\xc0') != '\x80');
+
+        /* TODO: glyphs with double width */
+        if (Count > Width) {
+            Deleted = *Cur;
             *Cur = '\0';
             break;
         }
     }
 
     /* TODO: process fields ourself to add proper alignment */
-    printf("%-*s%s", width, Strip(cell), delim);
+    printf("%-*s%s", Width, Strip(Cell), Delim);
+
+    *Cur = Deleted;
 }
 
 void PrintNumCell(int cell, char *delim, int width) {
@@ -179,4 +191,34 @@ int StringToInt(char *Str, char **RHS) {
 
     *RHS = Str;
     return Mod * Result;
+}
+
+float StringToReal(char *Str, char **RHS) {
+    float High = 0;
+    float Low = 0;
+    float Fraction = 1;
+    float Sign = 1;
+
+    switch (*Str) {
+    case '-':
+        Sign = -1;
+    fallthrough case '+':
+        ++Str;
+        break;
+    }
+
+    while (isdigit(*Str)) {
+        High = 10*High + (float)(*Str++ - '0');
+    }
+
+    if (*Str == '.') {
+        ++Str;
+        while (isdigit(*Str)) {
+            Low = 10*Low + (float)(*Str++ - '0');
+            Fraction *= 10;
+        }
+    }
+
+    *RHS = Str;
+    return Sign * (High + Low/Fraction);
 }

@@ -5,22 +5,24 @@
 #include <stdio.h>
 
 ssize_t GetLine(char *Buf, size_t BufSz, FILE *File);
-int GlyphCount(char *String);
-char *SkipWord(char *String);
-char *SkipSpaces(char *String);
-char *BreakOffWord(char *String);
+int GlyphCount(char *Str);
+size_t StringSize(char *Str);
+char *SkipWord(char *Str);
+char *SkipSpaces(char *Str);
+char *BreakOffWord(char *Str);
 #define BreakOffCell(S) BreakAtChar((S), DELIM_CHAR)
-char *BreakAtChar(char *String, char Delim);
-char *BreakAtLastChar(char *String, char Delim);
-char *FindChar(char *String, char Delim);
+char *BreakAtChar(char *Str, char Delim);
+char *BreakAtLastChar(char *Str, char Delim);
+char *FindChar(char *Str, char Delim);
 int CompareString(char *A, char *B);
-char *Strip(char *String);
+char *Strip(char *Str);
 void PrintStringCell(char *Cell, char *Delim, int Column);
 void PrintNumCell(int Cell, char *Delim, int Column);
 
-size_t BufferString(char *Buffer, size_t Size, char *String);
+size_t BufferString(char *Buffer, size_t Size, char *Str);
 
-int StringToPositiveInt(char *String);
-int StringToInt(char *String, char **RHS);
+int StringToPositiveInt(char *Str);
+int StringToInt(char *Str, char **RHS);
+float StringToReal(char *Str, char **RHS);
 
 #endif

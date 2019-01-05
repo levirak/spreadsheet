@@ -122,9 +122,7 @@ char *EvaluateCell(document *Sheet, cell *Cell) {
     if (!Cell) return NULL;
 
     if (Cell->Status & CELL_EVALUATING) {
-        Cell->Status |= CELL_CAUSE_ERROR;
-
-        BufferString(Cell->Value, ArrayCount(Cell->Value), "E:cycle");
+        Cell->Status |= CELL_CLOSE_CYCLE;
     }
     else if (Cell->Status & CELL_FUNCTION) {
         Cell->Status |= CELL_EVALUATING;
@@ -218,6 +216,13 @@ char *EvaluateCell(document *Sheet, cell *Cell) {
 
             if (C) {
                 char *Value = EvaluateCell(Sheet, C);
+
+                if (C->Status & CELL_CLOSE_CYCLE) {
+                    C->Status &= ~CELL_CLOSE_CYCLE;
+                    Cell->Status |= CELL_ERROR;
+                    Value = "E:cycle";
+                }
+
                 BufferString(Cell->Value, ArrayCount(Cell->Value), Value);
             }
         }
@@ -228,39 +233,43 @@ char *EvaluateCell(document *Sheet, cell *Cell) {
             /* TODO: check RHS for trailing characters */
 
             if (InitRange(RangeSpec, &Range)) {
+                char *ErrorString = NULL;
+                float Sum = 0;
                 cell *C;
-                int Sum = 0;
 
                 while (GetNextCell(Sheet, &Range, &C)) {
-                    EvaluateCell(Sheet, C);
-
                     /* pretend that NULL cells evaluate to 0 */
                     if (C) {
-                        if (C->Status & CELL_CAUSE_ERROR) {
-                            C->Status &= ~CELL_CAUSE_ERROR;
+                        EvaluateCell(Sheet, C);
+
+                        if (C->Status & CELL_CLOSE_CYCLE) {
+                            C->Status &= ~CELL_CLOSE_CYCLE;
                             Cell->Status |= CELL_ERROR;
+                            ErrorString = "E:cycle";
 
                             break;
                         }
                         else if (C->Status & CELL_ERROR) {
                             Cell->Status |= CELL_ERROR;
+                            ErrorString = "E:Sub";
 
                             break;
                         }
                         else {
-                            int i = StringToInt(C->Value, &RHS);
+                            float Value = StringToReal(C->Value, &RHS);
                             /* TODO: check RHS for trailing characters */
-                            Sum += i;
+                            Sum += Value;
                         }
                     }
                 }
 
-                if (Cell->Status & CELL_ERROR) {
+                if (ErrorString) {
                     size_t Size = ArrayCount(Cell->Value);
-                    BufferString(Cell->Value, Size, "E:cycle");
+                    BufferString(Cell->Value, Size, ErrorString);
                 }
                 else {
-                    snprintf(Cell->Value, ArrayCount(Cell->Value), "%d", Sum);
+                    /* TODO: roll our own snprintf */
+                    snprintf(Cell->Value, ArrayCount(Cell->Value), "%f", Sum);
                 }
             }
             else {
