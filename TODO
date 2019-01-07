@@ -1,0 +1,9 @@
+* formatting
+    - at least row-wise
+    - preferably cell-wise
+
+* compress
+    - I'm not so happy with how everything has turned out so far
+
+* write a real eval language
+    - we've got a stupid, super simple one now
