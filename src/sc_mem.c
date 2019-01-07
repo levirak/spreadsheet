@@ -56,6 +56,9 @@ document *ReadSheetAt(int DirFD, char *FileName) {
             Sheet->DirFD = open("/", O_DIRECTORY | O_RDONLY);
         }
     }
+    else if (DirFD == AT_FDCWD) {
+        Sheet->DirFD = AT_FDCWD;
+    }
     else {
         Sheet->DirFD = dup(DirFD);
     }

@@ -256,7 +256,8 @@ char *EvaluateCell(document *Sheet, cell *Cell) {
                             break;
                         }
                         else {
-                            float Value = StringToReal(C->Value, &RHS);
+                            float Value = StringToReal(SkipSpaces(C->Value),
+                                                       &RHS);
                             /* TODO: check RHS for trailing characters */
                             Sum += Value;
                         }
@@ -269,7 +270,8 @@ char *EvaluateCell(document *Sheet, cell *Cell) {
                 }
                 else {
                     /* TODO: roll our own snprintf */
-                    snprintf(Cell->Value, ArrayCount(Cell->Value), "%f", Sum);
+                    snprintf(Cell->Value, ArrayCount(Cell->Value), "% 16.2f",
+                             Sum);
                 }
             }
             else {

@@ -10,7 +10,7 @@
 
 /* basically a sparse lookup table */
 int DecimalWidth(unsigned int Num) {
-    int Width; // Maximum width Num could take
+    int Width;
 
     /* This should cover a 32 bit integer. Add more if neccesary */
     if      (Num < 10)          Width =  1;

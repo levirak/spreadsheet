@@ -129,7 +129,7 @@ void PrintStringCell(char *Cell, char *Delim, int Width) {
     }
 
     /* TODO: process fields ourself to add proper alignment */
-    printf("%-*s%s", Width, Strip(Cell), Delim);
+    printf("%-*s%s", Width, Cell, Delim);
 
     *Cur = Deleted;
 }
@@ -209,6 +209,7 @@ float StringToReal(char *Str, char **RHS) {
 
     while (isdigit(*Str)) {
         High = 10*High + (float)(*Str++ - '0');
+        if (*Str == ',') ++Str;
     }
 
     if (*Str == '.') {

@@ -22,7 +22,7 @@ enum document_property_flags {
 typedef struct cell {
     int Status;
     int Width;
-    char Value[32]; /* TEMP! */
+    char Value[128]; /* TEMP! */
 } cell;
 
 typedef struct row {
