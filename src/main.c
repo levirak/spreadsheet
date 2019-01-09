@@ -29,32 +29,6 @@ int DecimalWidth(unsigned int Num) {
 }
 
 static inline
-void PrintSeparator(document *Doc, int Margin) {
-    int j;
-    int Width;
-    static char Sep[MAX_CELL_WIDTH+1];
-
-    if (Doc->Properties & DOC_PRINT_SIDE) {
-        printf("%*s  ", Margin, "");
-    }
-
-    for (j = 0; j < (int)ArrayCount(Doc->ColWidth) - 1; ++j) {
-        Width = Doc->ColWidth[j];
-
-        for (int c = 0; c < Width; ++c) Sep[c] = '-';
-        Sep[Width+1] = 0;
-
-        PrintStringCell(Sep, INNER_FS, Width);
-    }
-
-    for (int c = 0; c < Width; ++c) Sep[c] = '-';
-    Sep[Width+1] = 0;
-
-    Width = Doc->ColWidth[j];
-    PrintStringCell(Sep, OUTER_FS, Width);
-}
-
-static inline
 void PrintRow(document *Doc, int i, int Margin) {
     row *Row = Doc->Row + i;
     cell *Cell;
@@ -74,6 +48,38 @@ void PrintRow(document *Doc, int i, int Margin) {
         Cell = Row->Cell + j;
         Cell->Width = Doc->ColWidth[j];
         PrintStringCell(EvaluateCell(Doc, Cell), OUTER_FS, Cell->Width);
+    }
+}
+
+static inline
+void PrintHeadRow(document *Doc, int i, int Margin) {
+    int j;
+    int Width;
+    static char Sep[MAX_CELL_WIDTH+1];
+    int ColCount = Doc->Row[i].CellCount;
+
+    PrintRow(Doc, i, Margin);
+
+    if (Doc->Properties & DOC_PRINT_SIDE) {
+        printf("%*s  ", Margin, "");
+    }
+
+    for (j = 0; j < ColCount - 1; ++j) {
+        Width = Doc->ColWidth[j];
+
+        for (int c = 0; c < Width; ++c) Sep[c] = '-';
+        Sep[Width+1] = 0;
+
+        PrintStringCell(Sep, INNER_FS, Width);
+    }
+
+    if (j < ColCount) {
+        Width = Doc->ColWidth[j];
+
+        for (int c = 0; c < Width; ++c) Sep[c] = '-';
+        Sep[Width+1] = 0;
+
+        PrintStringCell(Sep, OUTER_FS, Width);
     }
 }
 
@@ -131,10 +137,8 @@ int main(int argc, char **argv) {
             }
 
             if (Doc->RowCount > 0) {
-                PrintRow(Doc, 0, Margin);
+                PrintHeadRow(Doc, 0, Margin);
             }
-
-            if (Doc->RowCount > 1) PrintSeparator(Doc, Margin);
 
             for (int i = 1; i < Doc->RowCount; ++i) {
                 PrintRow(Doc, i, Margin);

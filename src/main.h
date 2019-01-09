@@ -13,7 +13,7 @@
 #define IsCommandChar(C) ((C) == COMMAND_CHAR)
 #define IsEvalChar(C) ((C) == EVAL_CHAR)
 
-#define INNER_FS "  "
+#define INNER_FS " "
 #define OUTER_FS "\n"
 
 #define fallthrough __attribute__((fallthrough));
