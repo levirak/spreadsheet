@@ -6,6 +6,7 @@
 #include <fcntl.h>
 
 #define DEFAULT_CELL_WIDTH 8
+#define MAX_CELL_WIDTH 1024 /* TODO: enforce this when reading the document */
 
 enum cell_status_flags {
     CELL_FUNCTION    = 0x01,
@@ -15,8 +16,9 @@ enum cell_status_flags {
 };
 
 enum document_property_flags {
-    DOC_PRINT_TOP  = 0x01,
-    DOC_PRINT_SIDE = 0x02,
+    DOC_PRINT_TOP   = 0x01,
+    DOC_PRINT_SIDE  = 0x02,
+    DOC_PRINT_WIDTH = 0x04,
 };
 
 typedef struct cell {
@@ -46,9 +48,8 @@ typedef struct document {
 } document;
 
 
-#define ReadSheet(P) ReadSheetAt(AT_FDCWD, P)
-document *ReadSheetAt(int FD, char *FileName);
-document *ReadSheetRelativeTo(document *Sheet, char *FileName);
+#define ReadDocument(P) ReadDocumentRelativeTo(NULL, P)
+document *ReadDocumentRelativeTo(document *Document, char *FileName);
 void FreeDocument(document *);
 
 row *GetNewRow(document *Root);

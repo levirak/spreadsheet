@@ -9,6 +9,7 @@
 #include <stdlib.h>
 
 /* basically a sparse lookup table */
+static inline
 int DecimalWidth(unsigned int Num) {
     int Width;
 
@@ -27,55 +28,129 @@ int DecimalWidth(unsigned int Num) {
     return Width;
 }
 
+static inline
+void PrintSeparator(document *Doc, int Margin) {
+    int j;
+    int Width;
+    static char Sep[MAX_CELL_WIDTH+1];
+
+    if (Doc->Properties & DOC_PRINT_SIDE) {
+        printf("%*s  ", Margin, "");
+    }
+
+    for (j = 0; j < (int)ArrayCount(Doc->ColWidth) - 1; ++j) {
+        Width = Doc->ColWidth[j];
+
+        for (int c = 0; c < Width; ++c) Sep[c] = '-';
+        Sep[Width+1] = 0;
+
+        PrintStringCell(Sep, INNER_FS, Width);
+    }
+
+    for (int c = 0; c < Width; ++c) Sep[c] = '-';
+    Sep[Width+1] = 0;
+
+    Width = Doc->ColWidth[j];
+    PrintStringCell(Sep, OUTER_FS, Width);
+}
+
+static inline
+void PrintRow(document *Doc, int i, int Margin) {
+    row *Row = Doc->Row + i;
+    cell *Cell;
+    int j = 0;
+
+    if (Doc->Properties & DOC_PRINT_SIDE) {
+        printf("%*d  ", Margin, i+1);
+    }
+
+    for (j = 0; j < Row->CellCount - 1; ++j) {
+        Cell = Row->Cell + j;
+        Cell->Width = Doc->ColWidth[j];
+        PrintStringCell(EvaluateCell(Doc, Cell), INNER_FS, Cell->Width);
+    }
+
+    if (j < Row->CellCount) {
+        Cell = Row->Cell + j;
+        Cell->Width = Doc->ColWidth[j];
+        PrintStringCell(EvaluateCell(Doc, Cell), OUTER_FS, Cell->Width);
+    }
+}
+
+static inline
+void PrintTopRuler(document *Doc, int Margin) {
+    int j;
+    char Name[2] = "A";
+
+    if (Doc->Properties & DOC_PRINT_SIDE) {
+        printf("%*s  ", Margin, "");
+    }
+
+    for (j = 0; j < (int)ArrayCount(Doc->ColWidth) - 1; ++j) {
+        PrintStringCell(Name, INNER_FS, Doc->ColWidth[j]);
+        ++Name[0];
+    }
+
+    PrintStringCell(Name, OUTER_FS, Doc->ColWidth[j]);
+}
+
+static inline
+void PrintColumnWidths(document *Doc, int Margin) {
+    int Width;
+    int i;
+
+    if (Doc->Properties & DOC_PRINT_SIDE) {
+        printf("%*s  ", Margin, "");
+    }
+
+    for (i = 0; i < (int)ArrayCount(Doc->ColWidth) - 1; ++i) {
+        Width = Doc->ColWidth[i];
+        PrintNumCell(Width, INNER_FS, Width);
+    }
+
+    Width = Doc->ColWidth[i];
+    PrintNumCell(Width, OUTER_FS, Width);
+}
+
 int main(int argc, char **argv) {
-    document *Sheet = NULL;
+    document *Doc = NULL;
 
     /* TODO: true argument parsing */
-    Check(argc == 2, "USAGE: %s FILE", argv[0]);
+    if (argc == 2) {
+        char *FileName = argv[1];
+        Doc = ReadDocument(FileName);
+        if (Doc) {
+            int Margin = DecimalWidth(Doc->RowCount);
 
-    char *FileName = argv[1];
-    Check(Sheet = ReadSheet(FileName), "failed to open file");
+            if (Doc->Properties & DOC_PRINT_WIDTH) {
+                PrintColumnWidths(Doc, Margin);
+            }
 
-    int Margin = DecimalWidth(Sheet->RowCount);
+            if (Doc->Properties & DOC_PRINT_TOP) {
+                PrintTopRuler(Doc, Margin);
+            }
 
-    if (Sheet->Properties & DOC_PRINT_TOP) {
-        if (Sheet->Properties & DOC_PRINT_SIDE) {
-            printf("%*s  ", Margin, "");
+            if (Doc->RowCount > 0) {
+                PrintRow(Doc, 0, Margin);
+            }
+
+            if (Doc->RowCount > 1) PrintSeparator(Doc, Margin);
+
+            for (int i = 1; i < Doc->RowCount; ++i) {
+                PrintRow(Doc, i, Margin);
+            }
+
+            FreeDocument(Doc);
+
+            return 0;
         }
-
-        for (size_t i = 0; i < ArrayCount(Sheet->ColWidth); ++i) {
-            char Name[2] = { 'A'+i, 0 };
-            PrintStringCell(Name, DelimFor(Sheet, i), Sheet->ColWidth[i]);
+        else {
+        printf("failed to open file");
+        return 1;
         }
     }
-
-    for (int i = 0; i < Sheet->RowCount; ++i) {
-        row *Row = Sheet->Row + i;
-        cell *Cell;
-        int j;
-
-        if (Sheet->Properties & DOC_PRINT_SIDE) {
-            printf("%*d  ", Margin, i+1);
-        }
-
-        for (j = 0; j < Row->CellCount - 1; ++j) {
-            Cell = Row->Cell + j;
-            Cell->Width = Sheet->ColWidth[j];
-
-            PrintStringCell(EvaluateCell(Sheet, Cell), " ", Cell->Width);
-        }
-
-        Cell = Row->Cell + j;
-        Cell->Width = Sheet->ColWidth[j];
-        PrintStringCell(EvaluateCell(Sheet, Cell), "\n", Cell->Width);
+    else {
+        printf("USAGE: %s FILE", argv[0]);
+        return 1;
     }
-
-    FreeDocument(Sheet);
-
-    return 0;
-
-error:
-    if (Sheet) FreeDocument(Sheet);
-
-    return 1;
 }

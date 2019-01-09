@@ -31,13 +31,13 @@ bool IsReference(char *RefSpec) {
 }
 
 static inline
-cell *GetCell(document *Sheet, char *RefSpec) {
+cell *GetCell(document *Document, char *RefSpec) {
     cell *Cell = NULL;
 
     int RowIdx = StringToPositiveInt(RefSpec+1) - 1;
 
-    if (RowIdx != -1 && RowIdx < Sheet->RowCount) {
-        row *Row = Sheet->Row + RowIdx;
+    if (RowIdx != -1 && RowIdx < Document->RowCount) {
+        row *Row = Document->Row + RowIdx;
         int CellIdx = *RefSpec - 'A';
 
         if (CellIdx < Row->CellCount) {
@@ -91,7 +91,7 @@ bool InitRange(char *RangeSpec, range *Range) {
 }
 
 static inline
-int GetNextCell(document *Sheet, range *Range, cell **Cell) {
+int GetNextCell(document *Document, range *Range, cell **Cell) {
     int IsValidCell = 0;
     *Cell = NULL;
 
@@ -101,8 +101,8 @@ int GetNextCell(document *Sheet, range *Range, cell **Cell) {
     }
 
     if (Range->CurrentCell <= Range->EndCell &&
-        Range->CurrentRow < Sheet->RowCount) {
-        row *Row = Sheet->Row + Range->CurrentRow;
+        Range->CurrentRow < Document->RowCount) {
+        row *Row = Document->Row + Range->CurrentRow;
 
         IsValidCell = 1;
 
@@ -118,7 +118,7 @@ int GetNextCell(document *Sheet, range *Range, cell **Cell) {
 }
 
 #define MAX_BUFFER ArrayCount(((cell *)0)->Value)
-char *EvaluateCell(document *Sheet, cell *Cell) {
+char *EvaluateCell(document *Document, cell *Cell) {
     if (!Cell) return NULL;
 
     if (Cell->Status & CELL_EVALUATING) {
@@ -188,7 +188,8 @@ char *EvaluateCell(document *Sheet, cell *Cell) {
                 if (RHS && IsReference(RHS)) {
                     /* TODO: cache this document (?), so that multiple
                      * references don't pull it in freash every time */
-                    document *Sub = ReadSheetRelativeTo(Sheet, FunctionName);
+                    document *Sub = ReadDocumentRelativeTo(Document,
+                                                           FunctionName);
                     if (Sub) {
                         char *Value = EvaluateCell(Sub, GetCell(Sub, RHS));
 
@@ -212,10 +213,10 @@ char *EvaluateCell(document *Sheet, cell *Cell) {
             }
         }
         else if (IsReference(FunctionName)) {
-            cell *C = GetCell(Sheet, FunctionName);
+            cell *C = GetCell(Document, FunctionName);
 
             if (C) {
-                char *Value = EvaluateCell(Sheet, C);
+                char *Value = EvaluateCell(Document, C);
 
                 if (C->Status & CELL_CLOSE_CYCLE) {
                     C->Status &= ~CELL_CLOSE_CYCLE;
@@ -237,10 +238,10 @@ char *EvaluateCell(document *Sheet, cell *Cell) {
                 float Sum = 0;
                 cell *C;
 
-                while (GetNextCell(Sheet, &Range, &C)) {
+                while (GetNextCell(Document, &Range, &C)) {
                     /* pretend that NULL cells evaluate to 0 */
                     if (C) {
-                        EvaluateCell(Sheet, C);
+                        EvaluateCell(Document, C);
 
                         if (C->Status & CELL_CLOSE_CYCLE) {
                             C->Status &= ~CELL_CLOSE_CYCLE;

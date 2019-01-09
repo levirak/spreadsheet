@@ -29,15 +29,13 @@ document *AllocDocument() {
     return Document;
 }
 
-document *ReadSheetRelativeTo(document *Sheet, char *FileName) {
-    return ReadSheetAt(Sheet->DirFD, FileName);
-}
-
-document *ReadSheetAt(int DirFD, char *FileName) {
+document *ReadDocumentRelativeTo(document *Document, char *FileName) {
     char Buffer[1024];
     int FD;
     FILE *File;
-    document *Sheet;
+    document *NewDocument;
+
+    int DirFD = Document? Document->DirFD: AT_FDCWD;
 
     if ((FD = openat(DirFD, FileName, O_RDONLY)) < 0) {
         return NULL;
@@ -48,23 +46,23 @@ document *ReadSheetAt(int DirFD, char *FileName) {
         return NULL;
     }
 
-    Sheet = AllocDocument();
+    NewDocument = AllocDocument();
 
     /* TODO: is Buffer big enough? */
     BufferString(Buffer, ArrayCount(Buffer), FileName);
     if (BreakAtLastChar(Buffer, '/') && CompareString(Buffer, ".") != 0) {
         if (*Buffer) {
-            Sheet->DirFD = open(Buffer, O_DIRECTORY | O_RDONLY);
+            NewDocument->DirFD = open(Buffer, O_DIRECTORY | O_RDONLY);
         }
         else {
-            Sheet->DirFD = open("/", O_DIRECTORY | O_RDONLY);
+            NewDocument->DirFD = open("/", O_DIRECTORY | O_RDONLY);
         }
     }
     else if (DirFD == AT_FDCWD) {
-        Sheet->DirFD = AT_FDCWD;
+        NewDocument->DirFD = AT_FDCWD;
     }
     else {
-        Sheet->DirFD = dup(DirFD);
+        NewDocument->DirFD = dup(DirFD);
     }
 
     while (GetLine(Buffer, ArrayCount(Buffer), File) > 0) {
@@ -86,24 +84,20 @@ document *ReadSheetAt(int DirFD, char *FileName) {
                         RHS = BreakOffWord(Word = RHS);
 
                         /* TODO: check for errors from strtol */
-                        Sheet->ColWidth[Column++] = strtol(Word, NULL, 0);
+                        NewDocument->ColWidth[Column++] = strtol(Word, NULL, 0);
                     }
                 }
                 else if (CompareString(Word, "print") == 0) {
                     RHS = BreakOffWord(Word = RHS);
 
                     if (CompareString(Word, "top_axis") == 0) {
-                        Sheet->Properties |= DOC_PRINT_TOP;
+                        NewDocument->Properties |= DOC_PRINT_TOP;
                     }
                     else if (CompareString(Word, "side_axis") == 0) {
-                        Sheet->Properties |= DOC_PRINT_SIDE;
+                        NewDocument->Properties |= DOC_PRINT_SIDE;
                     }
                     else if (CompareString(Word, "width") == 0) {
-                        size_t Count = ArrayCount(Sheet->ColWidth);
-                        for (size_t i = 0; i < Count; ++i) {
-                            int Width = Sheet->ColWidth[i];
-                            PrintNumCell(Width, DelimFor(Sheet, i), Width);
-                        }
+                        NewDocument->Properties |= DOC_PRINT_WIDTH;
                     }
                 }
                 else {
@@ -113,7 +107,7 @@ document *ReadSheetAt(int DirFD, char *FileName) {
         }
         else {
             char *String;
-            row *Row = GetNewRow(Sheet);
+            row *Row = GetNewRow(NewDocument);
 
             while (*RHS) {
                 RHS = BreakOffCell(String = RHS);
@@ -136,7 +130,7 @@ document *ReadSheetAt(int DirFD, char *FileName) {
     }
 
     fclose(File);
-    return Sheet;
+    return NewDocument;
 }
 
 void FreeDocument(document *Document) {
