@@ -4,7 +4,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-ssize_t GetLine(char *Buf, size_t BufSz, FILE *File);
+ssize_t GetLine(char *Buf, size_t BufSz, int FileHandle);
 int GlyphCount(char *Str);
 size_t StringSize(char *Str);
 char *SkipWord(char *Str);

@@ -2,34 +2,36 @@
 #include <sc_strings.h>
 
 #include <stdlib.h>
-#include <stdio.h>
+#include <unistd.h>
 #include <ctype.h>
 
 /* NOTE: this function does not handle '\r\n' or '\r' line ends */
-ssize_t GetLine(char *Buffer, size_t BufferSize, FILE *File) {
-    char *End = Buffer + BufferSize - 1; /* leave space for a '\0' */
+ssize_t GetLine(char *Buf, size_t BufSz, int FileHandle) {
+    char *End = Buf + BufSz - 1; /* leave space for a '\0' */
     char *Cur;
-    int C = '\0';
+    char C = '\0';
+    int BytesRead;
 
-    for (Cur = Buffer; Cur < End; ++Cur) {
-        C = fgetc(File);
-        if (C == EOF || C == '\n') {
-            break;
+    for (Cur = Buf; Cur < End; ++Cur) {
+        /* TODO: buffering to reduce system calls? */
+        BytesRead = read(FileHandle, &C, sizeof C);
+        if (BytesRead && C != '\n') {
+            *Cur = C;
         }
         else {
-            *Cur = C;
+            break;
         }
     }
     *Cur = '\0';
 
     /* consume to the End of the line even if we cannot store it */
-    while (C != EOF && C != '\n') C = fgetc(File);
+    while (BytesRead && C != '\n') BytesRead = read(FileHandle, &C, sizeof C);
 
-    if (C == EOF) {
+    if (!BytesRead) {
         return -1;
     }
     else {
-        return Cur - Buffer;
+        return Cur - Buf;
     }
 }
 

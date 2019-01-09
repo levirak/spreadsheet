@@ -55,7 +55,7 @@ static inline
 void PrintHeadRow(document *Doc, int i, int Margin) {
     int j;
     int Width;
-    static char Sep[MAX_CELL_WIDTH+1];
+    static char Sep[MAX_COLUMN_WIDTH+1];
     int ColCount = Doc->Row[i].CellCount;
 
     PrintRow(Doc, i, Margin);
@@ -137,7 +137,12 @@ int main(int argc, char **argv) {
             }
 
             if (Doc->RowCount > 0) {
-                PrintHeadRow(Doc, 0, Margin);
+                if (Doc->Properties & DOC_PRINT_HEAD_SEP) {
+                    PrintHeadRow(Doc, 0, Margin);
+                }
+                else {
+                    PrintRow(Doc, 0, Margin);
+                }
             }
 
             for (int i = 1; i < Doc->RowCount; ++i) {

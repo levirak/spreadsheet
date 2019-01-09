@@ -6,7 +6,7 @@
 #include <fcntl.h>
 
 #define DEFAULT_CELL_WIDTH 8
-#define MAX_CELL_WIDTH 1024 /* TODO: enforce this when reading the document */
+#define MAX_COLUMN_WIDTH 1024
 
 enum cell_status_flags {
     CELL_FUNCTION    = 0x01,
@@ -16,9 +16,10 @@ enum cell_status_flags {
 };
 
 enum document_property_flags {
-    DOC_PRINT_TOP   = 0x01,
-    DOC_PRINT_SIDE  = 0x02,
-    DOC_PRINT_WIDTH = 0x04,
+    DOC_PRINT_TOP      = 0x01,
+    DOC_PRINT_SIDE     = 0x02,
+    DOC_PRINT_WIDTH    = 0x04,
+    DOC_PRINT_HEAD_SEP = 0x08,
 };
 
 typedef struct cell {

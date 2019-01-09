@@ -12,37 +12,31 @@
 
 static inline
 document *AllocDocument() {
-    document *Document = malloc(sizeof *Document);
+    document *Doc = malloc(sizeof *Doc);
 
 #   define INITIAL_ROW_CAP 1
 
-    *Document = (document){
+    *Doc = (document){
         .RowCap = INITIAL_ROW_CAP,
         .RowCount = 0,
-        .Row = malloc(sizeof *Document->Row * INITIAL_ROW_CAP),
+        .Row = malloc(sizeof *Doc->Row * INITIAL_ROW_CAP),
     };
 
-    for (size_t i = 0; i < ArrayCount(Document->ColWidth); ++i) {
-        Document->ColWidth[i] = 8;
+    for (size_t i = 0; i < ArrayCount(Doc->ColWidth); ++i) {
+        Doc->ColWidth[i] = 8;
     }
 
-    return Document;
+    return Doc;
 }
 
-document *ReadDocumentRelativeTo(document *Document, char *FileName) {
+document *ReadDocumentRelativeTo(document *Doc, char *FileName) {
     char Buffer[1024];
-    int FD;
-    FILE *File;
     document *NewDocument;
 
-    int DirFD = Document? Document->DirFD: AT_FDCWD;
+    int DirFD = Doc? Doc->DirFD: AT_FDCWD;
 
-    if ((FD = openat(DirFD, FileName, O_RDONLY)) < 0) {
-        return NULL;
-    }
-
-    if (!(File = fdopen(FD, "r"))) {
-        close(FD);
+    int FileHandle = openat(DirFD, FileName, O_RDONLY);
+    if (FileHandle < 0) {
         return NULL;
     }
 
@@ -65,7 +59,7 @@ document *ReadDocumentRelativeTo(document *Document, char *FileName) {
         NewDocument->DirFD = dup(DirFD);
     }
 
-    while (GetLine(Buffer, ArrayCount(Buffer), File) > 0) {
+    while (GetLine(Buffer, ArrayCount(Buffer), FileHandle) > 0) {
         int Column = 0;
         char *RHS = Buffer;
 
@@ -81,10 +75,22 @@ document *ReadDocumentRelativeTo(document *Document, char *FileName) {
 
                 if (CompareString(Word, "width") == 0) {
                     while (*RHS) {
-                        RHS = BreakOffWord(Word = RHS);
+                        char *Trailing;
 
-                        /* TODO: check for errors from strtol */
-                        NewDocument->ColWidth[Column++] = strtol(Word, NULL, 0);
+                        RHS = BreakOffWord(Word = RHS);
+                        int Width = StringToInt(Word, &Trailing);
+
+                        if (Width > MAX_COLUMN_WIDTH) {
+                            Error("Truncating overwide cell: %d (max %d)",
+                                  Width, MAX_COLUMN_WIDTH);
+                            Width = MAX_COLUMN_WIDTH;
+                        }
+
+                        if (*Trailing) {
+                            Error("Trailing after width: %s", Word);
+                        }
+
+                        NewDocument->ColWidth[Column++] = Width;
                     }
                 }
                 else if (CompareString(Word, "print") == 0) {
@@ -98,6 +104,9 @@ document *ReadDocumentRelativeTo(document *Document, char *FileName) {
                     }
                     else if (CompareString(Word, "width") == 0) {
                         NewDocument->Properties |= DOC_PRINT_WIDTH;
+                    }
+                    else if (CompareString(Word, "head_sep") == 0) {
+                        NewDocument->Properties |= DOC_PRINT_HEAD_SEP;
                     }
                 }
                 else {
@@ -129,20 +138,20 @@ document *ReadDocumentRelativeTo(document *Document, char *FileName) {
         }
     }
 
-    fclose(File);
+    close(FileHandle);
     return NewDocument;
 }
 
-void FreeDocument(document *Document) {
-    for (int i = 0; i < Document->RowCount; ++i) {
-        row *Row = Document->Row + i;
+void FreeDocument(document *Doc) {
+    for (int i = 0; i < Doc->RowCount; ++i) {
+        row *Row = Doc->Row + i;
 
         free(Row->Cell);
     }
 
-    close(Document->DirFD);
-    free(Document->Row);
-    free(Document);
+    if (Doc->DirFD != AT_FDCWD) close(Doc->DirFD);
+    free(Doc->Row);
+    free(Doc);
 }
 
 row *GetNewRow(document *Root) {
