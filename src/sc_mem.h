@@ -48,6 +48,7 @@ typedef struct document {
 
 #define ReadSheet(P) ReadSheetAt(AT_FDCWD, P)
 document *ReadSheetAt(int FD, char *FileName);
+document *ReadSheetRelativeTo(document *Sheet, char *FileName);
 void FreeDocument(document *);
 
 row *GetNewRow(document *Root);

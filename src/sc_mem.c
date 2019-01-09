@@ -29,6 +29,10 @@ document *AllocDocument() {
     return Document;
 }
 
+document *ReadSheetRelativeTo(document *Sheet, char *FileName) {
+    return ReadSheetAt(Sheet->DirFD, FileName);
+}
+
 document *ReadSheetAt(int DirFD, char *FileName) {
     char Buffer[1024];
     int FD;

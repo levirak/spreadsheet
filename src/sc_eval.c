@@ -188,7 +188,7 @@ char *EvaluateCell(document *Sheet, cell *Cell) {
                 if (RHS && IsReference(RHS)) {
                     /* TODO: cache this document (?), so that multiple
                      * references don't pull it in freash every time */
-                    document *Sub = ReadSheetAt(Sheet->DirFD, FunctionName);
+                    document *Sub = ReadSheetRelativeTo(Sheet, FunctionName);
                     if (Sub) {
                         char *Value = EvaluateCell(Sub, GetCell(Sub, RHS));
 
