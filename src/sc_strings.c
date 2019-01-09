@@ -9,7 +9,7 @@
 ssize_t GetLine(char *Buffer, size_t BufferSize, FILE *File) {
     char *End = Buffer + BufferSize - 1; /* leave space for a '\0' */
     char *Cur;
-    char C = '\0';
+    int C = '\0';
 
     for (Cur = Buffer; Cur < End; ++Cur) {
         C = fgetc(File);
