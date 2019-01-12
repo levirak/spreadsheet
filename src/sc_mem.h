@@ -24,28 +24,23 @@ enum document_property_flags {
 
 typedef struct cell {
     int Status;
-    int Width;
     char Value[128]; /* TEMP! */
 } cell;
 
-typedef struct row {
-    cell *Cell;
+typedef struct column {
+    int Width;
     int CellCap;
     int CellCount;
-} row;
+    cell *Cell;
+} column;
 
 typedef struct document {
-    int RowCap;
-    int RowCount;
-    row *Row;
+    int ColumnCap;
+    int ColumnCount;
+    column *Column;
 
     int Properties;
     int DirFD;
-
-    /* @TEMP: this row count
-    * Note that for now there can be now more than 26 rows.
-    */
-    int ColWidth[8];
 } document;
 
 
@@ -53,8 +48,8 @@ typedef struct document {
 document *ReadDocumentRelativeTo(document *Document, char *FileName);
 void FreeDocument(document *);
 
-row *GetNewRow(document *Root);
-cell *GetNewCell(row *Row);
+column *GetColumn(document *Doc, int ColumnIndex);
+cell *GetCell(document *Doc, int ColumnIndex, int RowIndex);
 
 #define MemZero(M, S) MemSet(M, S, 0)
 void MemSet(void *Destination, size_t Size, char Byte);

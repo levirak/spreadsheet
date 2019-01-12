@@ -58,7 +58,7 @@ char *SkipWord(char *Str) {
 }
 
 char *SkipSpaces(char *Str) {
-    while (isspace(*Str)) ++Str;
+    while (*Str && isspace(*Str)) ++Str;
     return Str;
 }
 

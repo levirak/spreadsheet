@@ -29,25 +29,36 @@ int DecimalWidth(unsigned int Num) {
 }
 
 static inline
-void PrintRow(document *Doc, int i, int Margin) {
-    row *Row = Doc->Row + i;
-    cell *Cell;
-    int j = 0;
+void PrintRow(document *Doc, int r, int Margin) {
+    int c;
+    column *Column;
+    char *Value;
+    static char EmptyString[1] = "";
 
     if (Doc->Properties & DOC_PRINT_SIDE) {
-        printf("%*d  ", Margin, i+1);
+        printf("%*d  ", Margin, r+1);
     }
 
-    for (j = 0; j < Row->CellCount - 1; ++j) {
-        Cell = Row->Cell + j;
-        Cell->Width = Doc->ColWidth[j];
-        PrintStringCell(EvaluateCell(Doc, Cell), INNER_FS, Cell->Width);
+    for (c = 0; c < Doc->ColumnCount - 1; ++c) {
+        Value = EmptyString;
+        Column = Doc->Column + c;
+
+        if (r < Column->CellCount) {
+            Value = EvaluateCell(Doc, Column->Cell + r);
+        }
+
+        PrintStringCell(Value, INNER_FS, Column->Width);
     }
 
-    if (j < Row->CellCount) {
-        Cell = Row->Cell + j;
-        Cell->Width = Doc->ColWidth[j];
-        PrintStringCell(EvaluateCell(Doc, Cell), OUTER_FS, Cell->Width);
+    if (c < Doc->ColumnCount) {
+        Value = EmptyString;
+
+        Column = Doc->Column + c;
+        if (r < Column->CellCount) {
+            Value = EvaluateCell(Doc, Column->Cell + r);
+        }
+
+        PrintStringCell(Value, OUTER_FS, Column->Width);
     }
 }
 
@@ -56,7 +67,6 @@ void PrintHeadRow(document *Doc, int i, int Margin) {
     int j;
     int Width;
     static char Sep[MAX_COLUMN_WIDTH+1];
-    int ColCount = Doc->Row[i].CellCount;
 
     PrintRow(Doc, i, Margin);
 
@@ -64,8 +74,8 @@ void PrintHeadRow(document *Doc, int i, int Margin) {
         printf("%*s  ", Margin, "");
     }
 
-    for (j = 0; j < ColCount - 1; ++j) {
-        Width = Doc->ColWidth[j];
+    for (j = 0; j < Doc->ColumnCount - 1; ++j) {
+        Width = Doc->Column[j].Width;
 
         for (int c = 0; c < Width; ++c) Sep[c] = '-';
         Sep[Width+1] = 0;
@@ -73,8 +83,8 @@ void PrintHeadRow(document *Doc, int i, int Margin) {
         PrintStringCell(Sep, INNER_FS, Width);
     }
 
-    if (j < ColCount) {
-        Width = Doc->ColWidth[j];
+    if (j < Doc->ColumnCount) {
+        Width = Doc->Column[j].Width;
 
         for (int c = 0; c < Width; ++c) Sep[c] = '-';
         Sep[Width+1] = 0;
@@ -88,16 +98,17 @@ void PrintTopRuler(document *Doc, int Margin) {
     int j;
     char Name[2] = "A";
 
+    /* @TEMP: for now there can be now more than 26 columns. */
     if (Doc->Properties & DOC_PRINT_SIDE) {
         printf("%*s  ", Margin, "");
     }
 
-    for (j = 0; j < (int)ArrayCount(Doc->ColWidth) - 1; ++j) {
-        PrintStringCell(Name, INNER_FS, Doc->ColWidth[j]);
+    for (j = 0; j < Doc->ColumnCount - 1; ++j) {
+        PrintStringCell(Name, INNER_FS, Doc->Column[j].Width);
         ++Name[0];
     }
 
-    PrintStringCell(Name, OUTER_FS, Doc->ColWidth[j]);
+    PrintStringCell(Name, OUTER_FS, Doc->Column[j].Width);
 }
 
 static inline
@@ -109,12 +120,12 @@ void PrintColumnWidths(document *Doc, int Margin) {
         printf("%*s  ", Margin, "");
     }
 
-    for (i = 0; i < (int)ArrayCount(Doc->ColWidth) - 1; ++i) {
-        Width = Doc->ColWidth[i];
+    for (i = 0; i < Doc->ColumnCount - 1; ++i) {
+        Width = Doc->Column[i].Width;
         PrintNumCell(Width, INNER_FS, Width);
     }
 
-    Width = Doc->ColWidth[i];
+    Width = Doc->Column[i].Width;
     PrintNumCell(Width, OUTER_FS, Width);
 }
 
@@ -126,7 +137,23 @@ int main(int argc, char **argv) {
         char *FileName = argv[1];
         Doc = ReadDocument(FileName);
         if (Doc) {
-            int Margin = DecimalWidth(Doc->RowCount);
+            int MaxColumnWidth = 0;
+            int MaxRowCount = 0;
+
+            for (int i = 0; i < Doc->ColumnCount; ++i) {
+                int ColumnWidth = Doc->Column[i].Width;
+                int RowCount = Doc->Column[i].CellCount;
+
+                if (ColumnWidth > MaxColumnWidth) {
+                    MaxColumnWidth = ColumnWidth;
+                }
+
+                if (RowCount > MaxRowCount) {
+                    MaxRowCount = RowCount;
+                }
+            }
+
+            int Margin = DecimalWidth(MaxColumnWidth);
 
             if (Doc->Properties & DOC_PRINT_WIDTH) {
                 PrintColumnWidths(Doc, Margin);
@@ -136,7 +163,7 @@ int main(int argc, char **argv) {
                 PrintTopRuler(Doc, Margin);
             }
 
-            if (Doc->RowCount > 0) {
+            if (MaxRowCount > 0) {
                 if (Doc->Properties & DOC_PRINT_HEAD_SEP) {
                     PrintHeadRow(Doc, 0, Margin);
                 }
@@ -145,7 +172,7 @@ int main(int argc, char **argv) {
                 }
             }
 
-            for (int i = 1; i < Doc->RowCount; ++i) {
+            for (int i = 1; i < MaxRowCount; ++i) {
                 PrintRow(Doc, i, Margin);
             }
 

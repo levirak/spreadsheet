@@ -14,17 +14,13 @@ static inline
 document *AllocDocument() {
     document *Doc = malloc(sizeof *Doc);
 
-#   define INITIAL_ROW_CAP 1
+#   define INITIAL_COLUMN_CAP 1
 
     *Doc = (document){
-        .RowCap = INITIAL_ROW_CAP,
-        .RowCount = 0,
-        .Row = malloc(sizeof *Doc->Row * INITIAL_ROW_CAP),
+        .ColumnCap = INITIAL_COLUMN_CAP,
+        .ColumnCount = 0,
+        .Column = malloc(sizeof *Doc->Column * INITIAL_COLUMN_CAP),
     };
-
-    for (size_t i = 0; i < ArrayCount(Doc->ColWidth); ++i) {
-        Doc->ColWidth[i] = 8;
-    }
 
     return Doc;
 }
@@ -59,8 +55,9 @@ document *ReadDocumentRelativeTo(document *Doc, char *FileName) {
         NewDocument->DirFD = dup(DirFD);
     }
 
+    int RowIndex = 0;
     while (GetLine(Buffer, ArrayCount(Buffer), FileHandle) > 0) {
-        int Column = 0;
+        int ColumnIndex = 0;
         char *RHS = Buffer;
 
         if (IsCommentChar(RHS[0])) {
@@ -90,7 +87,7 @@ document *ReadDocumentRelativeTo(document *Doc, char *FileName) {
                             Error("Trailing after width: %s", Word);
                         }
 
-                        NewDocument->ColWidth[Column++] = Width;
+                        GetColumn(NewDocument, ColumnIndex++)->Width = Width;
                     }
                 }
                 else if (CompareString(Word, "print") == 0) {
@@ -116,12 +113,11 @@ document *ReadDocumentRelativeTo(document *Doc, char *FileName) {
         }
         else {
             char *String;
-            row *Row = GetNewRow(NewDocument);
 
             while (*RHS) {
                 RHS = BreakOffCell(String = RHS);
 
-                cell *Cell = GetNewCell(Row);
+                cell *Cell = GetCell(NewDocument, ColumnIndex++, RowIndex);
 
                 if (StringSize(String) < ArrayCount(Cell->Value)) {
                     if (IsEvalChar(String[0])) {
@@ -135,6 +131,8 @@ document *ReadDocumentRelativeTo(document *Doc, char *FileName) {
 
                 BufferString(Cell->Value, ArrayCount(Cell->Value), String);
             }
+
+            ++RowIndex;
         }
     }
 
@@ -143,57 +141,56 @@ document *ReadDocumentRelativeTo(document *Doc, char *FileName) {
 }
 
 void FreeDocument(document *Doc) {
-    for (int i = 0; i < Doc->RowCount; ++i) {
-        row *Row = Doc->Row + i;
+    for (int i = 0; i < Doc->ColumnCount; ++i) {
+        column *Column = Doc->Column + i;
 
-        free(Row->Cell);
+        free(Column->Cell);
     }
 
     if (Doc->DirFD != AT_FDCWD) close(Doc->DirFD);
-    free(Doc->Row);
+    free(Doc->Column);
     free(Doc);
 }
 
-row *GetNewRow(document *Root) {
-    row *Row = NULL;
-
-    if (Root) {
-        if (Root->RowCount >= Root->RowCap) {
-            Root->RowCap *= 2;
-            Root->Row = realloc(Root->Row, sizeof *Root->Row * Root->RowCap);
+column *GetColumn(document *Doc, int ColumnIndex) {
+    while (Doc->ColumnCount <= ColumnIndex) {
+        while (Doc->ColumnCount >= Doc->ColumnCap) {
+            Doc->ColumnCap *= 2;
+            Doc->Column = realloc(Doc->Column,
+                                Doc->ColumnCap * sizeof *Doc->Column);
         }
 
-        Row = Root->Row + Root->RowCount++;
-        Row->CellCap = 1;
-        Row->CellCount = 0;
-        Row->Cell = malloc(sizeof *Row->Cell * Row->CellCap);
+        column *Column = Doc->Column + Doc->ColumnCount++;
+
+#       define INITIAL_ROW_CAP 1
+
+        *Column = (column){
+            .Width = DEFAULT_CELL_WIDTH,
+            .CellCap = INITIAL_ROW_CAP,
+            .CellCount = 0,
+            .Cell = malloc(sizeof *Column->Cell * INITIAL_ROW_CAP),
+        };
     }
 
-    return Row;
+    return Doc->Column + ColumnIndex;
 }
 
-static inline
-cell *GetNewCellPreChecked(row *Row) {
-    if (Row->CellCount >= Row->CellCap) {
-        Row->CellCap *= 2;
-        Row->Cell = realloc(Row->Cell, sizeof *Row->Cell * Row->CellCap);
+cell *GetCell(document *Doc, int ColumnIndex, int RowIndex) {
+    column *Column = GetColumn(Doc, ColumnIndex);
+
+    while (Column->CellCount <= RowIndex) {
+        while (Column->CellCount >= Column->CellCap) {
+            Column->CellCap *= 2;
+            Column->Cell = realloc(Column->Cell,
+                                Column->CellCap * sizeof *Column->Cell);
+        }
+
+        cell *Cell = Column->Cell + Column->CellCount++;
+
+        MemZero(Cell, sizeof *Cell);
     }
 
-    cell *Cell = Row->Cell + Row->CellCount++;
-
-    return Cell;
-}
-
-cell *GetNewCell(row *Root) {
-    cell *Cell = NULL;
-
-    if (Root) {
-        Cell = GetNewCellPreChecked(Root);
-        Cell->Status = 0;
-        Cell->Width = DEFAULT_CELL_WIDTH;
-    }
-
-    return Cell;
+    return Column->Cell + RowIndex;
 }
 
 void MemSet(void *Destination, size_t Size, char Byte) {

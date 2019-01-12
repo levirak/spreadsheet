@@ -14,12 +14,12 @@
 #include <unistd.h>
 
 typedef struct {
+    int StartColumn;
     int StartRow;
-    int StartCell;
+    int CurrentColumn;
     int CurrentRow;
-    int CurrentCell;
+    int EndColumn;
     int EndRow;
-    int EndCell;
 } range;
 
 static inline
@@ -31,17 +31,17 @@ bool IsReference(char *RefSpec) {
 }
 
 static inline
-cell *GetCell(document *Document, char *RefSpec) {
+cell *GetRefCell(document *Doc, char *RefSpec) {
     cell *Cell = NULL;
 
-    int RowIdx = StringToPositiveInt(RefSpec+1) - 1;
+    /* TODO: more columns */
+    int ColumnIndex = *RefSpec - 'A';
+    int RowIndex = StringToPositiveInt(RefSpec+1) - 1;
 
-    if (RowIdx != -1 && RowIdx < Document->RowCount) {
-        row *Row = Document->Row + RowIdx;
-        int CellIdx = *RefSpec - 'A';
-
-        if (CellIdx < Row->CellCount) {
-            Cell = Row->Cell + CellIdx;
+    if (ColumnIndex < Doc->ColumnCount) {
+        column *Column = Doc->Column + ColumnIndex;
+        if (RowIndex != -1 && RowIndex < Column->CellCount) {
+            Cell = Column->Cell + RowIndex;
         }
     }
 
@@ -50,37 +50,37 @@ cell *GetCell(document *Document, char *RefSpec) {
 
 
 static inline
-bool InitRange(char *RangeSpec, range *Range) {
+int InitRange(char *RangeSpec, range *Range) {
     /* @TEMP: only 26 columns possible */
-    bool IsValidCell = false;
+    int IsValidCell = 0;
     char *RHS;
 
     if (IsReference(RangeSpec)) {
-        Range->StartCell = RangeSpec[0] - 'A';
+        Range->StartColumn = RangeSpec[0] - 'A';
         Range->StartRow = StringToInt(RangeSpec+1, &RHS) - 1;
 
-        Range->CurrentCell = Range->StartCell;
+        Range->CurrentColumn = Range->StartColumn;
         Range->CurrentRow = Range->StartRow;
 
         if (*RHS == ':') {
-            IsValidCell = true;
+            IsValidCell = 1;
 
             ++RHS;
             if (*RHS) {
-                Range->EndCell = RHS[0] - 'A';
+                Range->EndColumn = RHS[0] - 'A';
                 Range->EndRow = StringToPositiveInt(RHS+1) - 1;
                 if (Range->EndRow == -1) return 0;
             }
             else {
-                Range->EndCell = Range->CurrentCell;
+                Range->EndColumn = Range->CurrentColumn;
                 Range->EndRow = INT_MAX;
             }
         }
         else if (*RHS == '\0') {
-            IsValidCell = true;
+            IsValidCell = 1;
 
             Range->EndRow = Range->CurrentRow;
-            Range->EndCell = Range->CurrentCell;
+            Range->EndColumn = Range->CurrentColumn;
         }
         else {
             Error("Unknown rangespec.");
@@ -91,30 +91,33 @@ bool InitRange(char *RangeSpec, range *Range) {
 }
 
 static inline
-int GetNextCell(document *Document, range *Range, cell **Cell) {
-    int IsValidCell = 0;
+int GetNextCell(document *Doc, range *Range, cell **Cell) {
+    int CellExists = 0;
     *Cell = NULL;
 
-    if (Range->CurrentRow > Range->EndRow) {
-        Range->CurrentRow = Range->StartRow;
-        ++Range->CurrentCell;
-    }
+    if (Range->CurrentColumn < Doc->ColumnCount
+        && Range->CurrentColumn <= Range->EndColumn) {
+        column *Column = Doc->Column + Range->CurrentColumn;
 
-    if (Range->CurrentCell <= Range->EndCell &&
-        Range->CurrentRow < Document->RowCount) {
-        row *Row = Document->Row + Range->CurrentRow;
+        if (Range->CurrentRow >= Column->CellCount
+            || Range->CurrentRow > Range->EndRow) {
+            Range->CurrentRow = Range->StartRow;
+            ++Range->CurrentColumn;
 
-        IsValidCell = 1;
-
-        if (Range->CurrentCell < Row->CellCount) {
-            *Cell = Row->Cell + Range->CurrentCell;
+            if (Range->CurrentColumn < Doc->ColumnCount
+                && Range->CurrentColumn <= Range->EndColumn) {
+                ++Column;
+            }
+            else {
+                return 0;
+            }
         }
 
+        *Cell = Column->Cell + Range->CurrentRow++;
+        CellExists = 1;
     }
 
-    ++Range->CurrentRow;
-
-    return IsValidCell;
+    return CellExists;
 }
 
 #define MAX_BUFFER ArrayCount(((cell *)0)->Value)
@@ -191,7 +194,7 @@ char *EvaluateCell(document *Document, cell *Cell) {
                     document *Sub = ReadDocumentRelativeTo(Document,
                                                            FunctionName);
                     if (Sub) {
-                        char *Value = EvaluateCell(Sub, GetCell(Sub, RHS));
+                        char *Value = EvaluateCell(Sub, GetRefCell(Sub, RHS));
 
                         BufferString(Cell->Value, Size, Value);
 
@@ -213,7 +216,7 @@ char *EvaluateCell(document *Document, cell *Cell) {
             }
         }
         else if (IsReference(FunctionName)) {
-            cell *C = GetCell(Document, FunctionName);
+            cell *C = GetRefCell(Document, FunctionName);
 
             if (C) {
                 char *Value = EvaluateCell(Document, C);
