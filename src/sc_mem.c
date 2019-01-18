@@ -20,6 +20,9 @@ document *AllocDocument() {
         .ColumnCap = INITIAL_COLUMN_CAP,
         .ColumnCount = 0,
         .Column = malloc(sizeof *Doc->Column * INITIAL_COLUMN_CAP),
+
+        .StringStackUsed = 0,
+        .StringStack = malloc(STRING_STACK_SIZE),
     };
 
     return Doc;
@@ -119,17 +122,11 @@ document *ReadDocumentRelativeTo(document *Doc, char *FileName) {
 
                 cell *Cell = GetCell(NewDocument, ColumnIndex++, RowIndex);
 
-                if (StringSize(String) < ArrayCount(Cell->Value)) {
-                    if (IsEvalChar(String[0])) {
-                        Cell->Status |= CELL_FUNCTION;
-                    }
-                }
-                else {
-                    Cell->Status |= CELL_ERROR;
-                    String = "E:long";
+                if (IsEvalChar(String[0])) {
+                    Cell->Status |= CELL_FUNCTION;
                 }
 
-                BufferString(Cell->Value, ArrayCount(Cell->Value), String);
+                Cell->Value = PushString(NewDocument, String);
             }
 
             ++RowIndex;
@@ -149,6 +146,7 @@ void FreeDocument(document *Doc) {
 
     if (Doc->DirFD != AT_FDCWD) close(Doc->DirFD);
     free(Doc->Column);
+    free(Doc->StringStack);
     free(Doc);
 }
 
@@ -182,12 +180,15 @@ cell *GetCell(document *Doc, int ColumnIndex, int RowIndex) {
         while (Column->CellCount >= Column->CellCap) {
             Column->CellCap *= 2;
             Column->Cell = realloc(Column->Cell,
-                                Column->CellCap * sizeof *Column->Cell);
+                                   Column->CellCap * sizeof *Column->Cell);
         }
 
         cell *Cell = Column->Cell + Column->CellCount++;
 
-        MemZero(Cell, sizeof *Cell);
+        *Cell = (cell){
+            .Status = 0,
+            .Value = EmptyString,
+        };
     }
 
     return Column->Cell + RowIndex;
@@ -212,4 +213,17 @@ void MemCopy(void *Destination, size_t Size, void *Source) {
     while (DCur < End) {
         *DCur++ = *SCur++;
     }
+}
+
+char *PushString(document *Doc, char *InString) {
+    char *OutString = Doc->StringStack + Doc->StringStackUsed;
+    size_t Length = StringSize(InString) + 1;
+
+    Doc->StringStackUsed += Length;
+    Assert(Doc->StringStackUsed < STRING_STACK_SIZE);
+
+    size_t Written = BufferString(OutString, Length, InString);
+    Assert(Written + 1 == Length);
+
+    return OutString;
 }

@@ -1,6 +1,13 @@
 #ifndef __main_h__
 #define __main_h__
 
+#ifdef NDEBUG
+#   define Assert(E)
+#else
+#   include <assert.h>
+#   define Assert(E) assert(E)
+#endif
+
 #define ArrayCount(A) (sizeof (A) / sizeof *(A))
 
 #define DELIM_CHAR   '\t'
@@ -17,5 +24,7 @@
 #define OUTER_FS "\n"
 
 #define fallthrough __attribute__((fallthrough));
+
+extern char EmptyString[1];
 
 #endif

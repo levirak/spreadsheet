@@ -1,5 +1,6 @@
 =sum(A2:)	date	description	means
 100	2018-11-15	initial cash	cash
 -1.26	2018-11-16	tea	cash
-#:width 8 16 32 8
+#:width 16 16 32 8
+#:print head_sep
 # vim: ts=16 sw=16 noet

@@ -8,6 +8,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+char EmptyString[1] = "";
+
 /* basically a sparse lookup table */
 static inline
 int DecimalWidth(unsigned int Num) {
@@ -33,7 +35,6 @@ void PrintRow(document *Doc, int r, int Margin) {
     int c;
     column *Column;
     char *Value;
-    static char EmptyString[1] = "";
 
     if (Doc->Properties & DOC_PRINT_SIDE) {
         printf("%*d  ", Margin, r+1);
@@ -71,7 +72,7 @@ void PrintHeadRow(document *Doc, int i, int Margin) {
     PrintRow(Doc, i, Margin);
 
     if (Doc->Properties & DOC_PRINT_SIDE) {
-        printf("%*s  ", Margin, "");
+        printf("%*s  ", Margin, EmptyString);
     }
 
     for (j = 0; j < Doc->ColumnCount - 1; ++j) {
@@ -100,7 +101,7 @@ void PrintTopRuler(document *Doc, int Margin) {
 
     /* @TEMP: for now there can be now more than 26 columns. */
     if (Doc->Properties & DOC_PRINT_SIDE) {
-        printf("%*s  ", Margin, "");
+        printf("%*s  ", Margin, EmptyString);
     }
 
     for (j = 0; j < Doc->ColumnCount - 1; ++j) {
@@ -117,7 +118,7 @@ void PrintColumnWidths(document *Doc, int Margin) {
     int i;
 
     if (Doc->Properties & DOC_PRINT_SIDE) {
-        printf("%*s  ", Margin, "");
+        printf("%*s  ", Margin, EmptyString);
     }
 
     for (i = 0; i < Doc->ColumnCount - 1; ++i) {

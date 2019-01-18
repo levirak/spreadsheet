@@ -24,7 +24,7 @@ enum document_property_flags {
 
 typedef struct cell {
     int Status;
-    char Value[128]; /* TEMP! */
+    char *Value; /* strings backed by the string stack */
 } cell;
 
 typedef struct column {
@@ -39,10 +39,16 @@ typedef struct document {
     int ColumnCount;
     column *Column;
 
+    size_t StringStackUsed;
+    char *StringStack;
+
     int Properties;
     int DirFD;
 } document;
 
+/* TODO: more string stack? index into parallel arrays? */
+#define STRING_STACK_SIZE 1024*2014
+char *PushString(document *Document, char *String);
 
 #define ReadDocument(P) ReadDocumentRelativeTo(NULL, P)
 document *ReadDocumentRelativeTo(document *Document, char *FileName);

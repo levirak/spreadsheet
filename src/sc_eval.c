@@ -22,6 +22,20 @@ typedef struct {
     int EndRow;
 } range;
 
+/* TODO: these feel like a hack. Find a better way
+ * Perhaps by having a specific error code rather than these strings 
+ *
+ * To document it, these have to be stored in (editable) memory because
+ * PrintStringCell always writes out a null character at the end of where it
+ * prints (even on top of another null character).
+ */
+static char ErrorString_NoFile[]   = "E:nofile";
+static char ErrorString_NoRef[]    = "E:noref";
+static char ErrorString_Unclosed[] = "E:unclosed";
+static char ErrorString_Cycle[]    = "E:cycle";
+static char ErrorString_Range[]    = "E:range";
+static char ErrorString_Sub[]      = "E:sub";
+
 static inline
 bool IsReference(char *RefSpec) {
     /* @TEMP: only 26 columns possible */
@@ -130,6 +144,8 @@ char *EvaluateCell(document *Document, cell *Cell) {
     else if (Cell->Status & CELL_FUNCTION) {
         Cell->Status |= CELL_EVALUATING;
 
+        Assert(Cell->Value[0] == EVAL_CHAR);
+
         char *FunctionName = Cell->Value + 1;
         char *RHS = BreakAtChar(FunctionName, '(');
 
@@ -181,8 +197,6 @@ char *EvaluateCell(document *Document, cell *Cell) {
          */
 
         if (FunctionName[0] == '{') {
-            size_t Size = ArrayCount(Cell->Value);
-
             char *RHS = BreakAtLastChar(FunctionName, '}');
             if (RHS) {
                 ++FunctionName;
@@ -195,24 +209,23 @@ char *EvaluateCell(document *Document, cell *Cell) {
                                                            FunctionName);
                     if (Sub) {
                         char *Value = EvaluateCell(Sub, GetRefCell(Sub, RHS));
-
-                        BufferString(Cell->Value, Size, Value);
+                        Cell->Value = PushString(Document, Value);
 
                         FreeDocument(Sub);
                     }
                     else {
                         Cell->Status |= CELL_ERROR;
-                        BufferString(Cell->Value, Size, "E:nofile");
+                        Cell->Value = ErrorString_NoFile;
                     }
                 }
                 else {
                     Cell->Status |= CELL_ERROR;
-                    BufferString(Cell->Value, Size, "E:noref");
+                    Cell->Value = ErrorString_NoRef;
                 }
             }
             else {
                 Cell->Status |= CELL_ERROR;
-                BufferString(Cell->Value, Size, "E:unclosed");
+                Cell->Value = ErrorString_Unclosed;
             }
         }
         else if (IsReference(FunctionName)) {
@@ -224,10 +237,10 @@ char *EvaluateCell(document *Document, cell *Cell) {
                 if (C->Status & CELL_CLOSE_CYCLE) {
                     C->Status &= ~CELL_CLOSE_CYCLE;
                     Cell->Status |= CELL_ERROR;
-                    Value = "E:cycle";
+                    Value = ErrorString_Cycle;
                 }
 
-                BufferString(Cell->Value, ArrayCount(Cell->Value), Value);
+                Cell->Value = Value;
             }
         }
         else if (CompareString(FunctionName, "sum") == 0) {
@@ -249,13 +262,13 @@ char *EvaluateCell(document *Document, cell *Cell) {
                         if (C->Status & CELL_CLOSE_CYCLE) {
                             C->Status &= ~CELL_CLOSE_CYCLE;
                             Cell->Status |= CELL_ERROR;
-                            ErrorString = "E:cycle";
+                            ErrorString = ErrorString_Cycle;
 
                             break;
                         }
                         else if (C->Status & CELL_ERROR) {
                             Cell->Status |= CELL_ERROR;
-                            ErrorString = "E:Sub";
+                            ErrorString = ErrorString_Sub;
 
                             break;
                         }
@@ -269,17 +282,17 @@ char *EvaluateCell(document *Document, cell *Cell) {
                 }
 
                 if (ErrorString) {
-                    size_t Size = ArrayCount(Cell->Value);
-                    BufferString(Cell->Value, Size, ErrorString);
+                    Cell->Value = ErrorString;
                 }
                 else {
+                    char Buffer[128]; /* TMP! */
                     /* TODO: roll our own snprintf */
-                    snprintf(Cell->Value, ArrayCount(Cell->Value), "% 16.2f",
-                             Sum);
+                    snprintf(Buffer, ArrayCount(Buffer), "% 16.2f", Sum);
+                    Cell->Value = PushString(Document, Buffer);
                 }
             }
             else {
-                BufferString(Cell->Value, ArrayCount(Cell->Value), "E:range");
+                Cell->Value = ErrorString_Range;
             }
         }
 
