@@ -181,12 +181,12 @@ int main(int argc, char **argv) {
             return 0;
         }
         else {
-        printf("failed to open file");
-        return 1;
+            printf("Failed to open %s\n", FileName);
+            return 1;
         }
     }
     else {
-        printf("USAGE: %s FILE", argv[0]);
+        printf("USAGE: %s FILE\n", argv[0]);
         return 1;
     }
 }
