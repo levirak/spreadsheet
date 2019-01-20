@@ -22,19 +22,12 @@ typedef struct {
     int EndRow;
 } range;
 
-/* TODO: these feel like a hack. Find a better way
- * Perhaps by having a specific error code rather than these strings 
- *
- * To document it, these have to be stored in (editable) memory because
- * PrintStringCell always writes out a null character at the end of where it
- * prints (even on top of another null character).
- */
-static char ErrorString_NoFile[]   = "E:nofile";
-static char ErrorString_NoRef[]    = "E:noref";
-static char ErrorString_Unclosed[] = "E:unclosed";
-static char ErrorString_Cycle[]    = "E:cycle";
-static char ErrorString_Range[]    = "E:range";
-static char ErrorString_Sub[]      = "E:sub";
+#define E_NOFILE   "E:nofile"
+#define E_NOREF    "E:noref"
+#define E_UNCLOSED "E:unclosed"
+#define E_CYCLE    "E:cycle"
+#define E_RANGE    "E:range"
+#define E_SUB      "E:sub"
 
 static inline
 bool IsReference(char *RefSpec) {
@@ -215,17 +208,17 @@ char *EvaluateCell(document *Document, cell *Cell) {
                     }
                     else {
                         Cell->Status |= CELL_ERROR;
-                        Cell->Value = ErrorString_NoFile;
+                        Cell->Value = E_NOFILE;
                     }
                 }
                 else {
                     Cell->Status |= CELL_ERROR;
-                    Cell->Value = ErrorString_NoRef;
+                    Cell->Value = E_NOREF;
                 }
             }
             else {
                 Cell->Status |= CELL_ERROR;
-                Cell->Value = ErrorString_Unclosed;
+                Cell->Value = E_UNCLOSED;
             }
         }
         else if (IsReference(FunctionName)) {
@@ -237,7 +230,7 @@ char *EvaluateCell(document *Document, cell *Cell) {
                 if (C->Status & CELL_CLOSE_CYCLE) {
                     C->Status &= ~CELL_CLOSE_CYCLE;
                     Cell->Status |= CELL_ERROR;
-                    Value = ErrorString_Cycle;
+                    Value = E_CYCLE;
                 }
 
                 Cell->Value = Value;
@@ -262,13 +255,13 @@ char *EvaluateCell(document *Document, cell *Cell) {
                         if (C->Status & CELL_CLOSE_CYCLE) {
                             C->Status &= ~CELL_CLOSE_CYCLE;
                             Cell->Status |= CELL_ERROR;
-                            ErrorString = ErrorString_Cycle;
+                            ErrorString = E_CYCLE;
 
                             break;
                         }
                         else if (C->Status & CELL_ERROR) {
                             Cell->Status |= CELL_ERROR;
-                            ErrorString = ErrorString_Sub;
+                            ErrorString = E_SUB;
 
                             break;
                         }
@@ -287,12 +280,12 @@ char *EvaluateCell(document *Document, cell *Cell) {
                 else {
                     char Buffer[128]; /* TMP! */
                     /* TODO: roll our own snprintf */
-                    snprintf(Buffer, ArrayCount(Buffer), "% 16.2f", Sum);
+                    snprintf(Buffer, ArrayCount(Buffer), "%.2f", Sum);
                     Cell->Value = PushString(Document, Buffer);
                 }
             }
             else {
-                Cell->Value = ErrorString_Range;
+                Cell->Value = E_RANGE;
             }
         }
 

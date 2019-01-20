@@ -6,6 +6,8 @@
 #else
 #   include <assert.h>
 #   define Assert(E) assert(E)
+#   include <stdlib.h>
+#   define InvalidCodePath abort() /* Invalid code path */
 #endif
 
 #define ArrayCount(A) (sizeof (A) / sizeof *(A))
@@ -24,7 +26,5 @@
 #define OUTER_FS "\n"
 
 #define fallthrough __attribute__((fallthrough));
-
-extern char EmptyString[1];
 
 #endif

@@ -22,6 +22,13 @@ enum document_property_flags {
     DOC_PRINT_HEAD_SEP = 0x08,
 };
 
+enum column_align {
+    ALIGN_LEFT = 0, /* default */
+    ALIGN_CENTER,
+    ALIGN_RIGHT,
+    /* TODO: ALIGN_DECIMAL */
+};
+
 typedef struct cell {
     int Status;
     char *Value; /* strings backed by the string stack */
@@ -29,6 +36,7 @@ typedef struct cell {
 
 typedef struct column {
     int Width;
+    int Align;
     int CellCap;
     int CellCount;
     cell *Cell;

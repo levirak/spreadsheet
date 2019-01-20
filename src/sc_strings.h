@@ -16,10 +16,11 @@ char *BreakAtLastChar(char *Str, char Delim);
 char *FindChar(char *Str, char Delim);
 int CompareString(char *A, char *B);
 char *Strip(char *Str);
-void PrintStringCell(char *Cell, char *Delim, int Column);
+void PrintStringCell(char *Cell, char *Delim, int Column, int Align);
 void PrintNumCell(int Cell, char *Delim, int Column);
 
 size_t BufferString(char *Buffer, size_t Size, char *Str);
+size_t BufferSpaces(char *Buffer, size_t Size, int Count);
 
 int StringToPositiveInt(char *Str);
 int StringToInt(char *Str, char **RHS);

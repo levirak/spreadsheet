@@ -8,8 +8,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-char EmptyString[1] = "";
-
 /* basically a sparse lookup table */
 static inline
 int DecimalWidth(unsigned int Num) {
@@ -40,94 +38,77 @@ void PrintRow(document *Doc, int r, int Margin) {
         printf("%*d  ", Margin, r+1);
     }
 
-    for (c = 0; c < Doc->ColumnCount - 1; ++c) {
-        Value = EmptyString;
+    for (c = 0; c < Doc->ColumnCount; ++c) {
+        char *FS = c == Doc->ColumnCount - 1? OUTER_FS: INNER_FS;
+        Value = "";
         Column = Doc->Column + c;
 
         if (r < Column->CellCount) {
             Value = EvaluateCell(Doc, Column->Cell + r);
         }
 
-        PrintStringCell(Value, INNER_FS, Column->Width);
-    }
-
-    if (c < Doc->ColumnCount) {
-        Value = EmptyString;
-
-        Column = Doc->Column + c;
-        if (r < Column->CellCount) {
-            Value = EvaluateCell(Doc, Column->Cell + r);
-        }
-
-        PrintStringCell(Value, OUTER_FS, Column->Width);
+        PrintStringCell(Value, FS, Column->Width, Column->Align);
     }
 }
 
 static inline
-void PrintHeadRow(document *Doc, int i, int Margin) {
-    int j;
-    int Width;
-    static char Sep[MAX_COLUMN_WIDTH+1];
-
-    PrintRow(Doc, i, Margin);
+void PrintHeadRow(document *Doc, int Row, int Margin) {
+    PrintRow(Doc, Row, Margin);
 
     if (Doc->Properties & DOC_PRINT_SIDE) {
-        printf("%*s  ", Margin, EmptyString);
+        printf("%*s  ", Margin, "");
     }
 
-    for (j = 0; j < Doc->ColumnCount - 1; ++j) {
-        Width = Doc->Column[j].Width;
+    for (int i = 0; i < Doc->ColumnCount; ++i) {
+        static char Sep[MAX_COLUMN_WIDTH+1];
 
-        for (int c = 0; c < Width; ++c) Sep[c] = '-';
+        char *FS = i == Doc->ColumnCount - 1? OUTER_FS: INNER_FS;
+        int Width = Doc->Column[i].Width;
+
+        for (int c = 0; c < Width; ++c) {
+            /* TODO: simplify logic? Remove looped conditional? */
+            if ((c == 0 && Doc->Column[i].Align == ALIGN_LEFT)
+            ||  (c == Width - 1 && Doc->Column[i].Align == ALIGN_RIGHT)) {
+                Sep[c] = ':';
+            }
+            else {
+                Sep[c] = '-';
+            }
+        }
+
         Sep[Width+1] = 0;
 
-        PrintStringCell(Sep, INNER_FS, Width);
-    }
-
-    if (j < Doc->ColumnCount) {
-        Width = Doc->Column[j].Width;
-
-        for (int c = 0; c < Width; ++c) Sep[c] = '-';
-        Sep[Width+1] = 0;
-
-        PrintStringCell(Sep, OUTER_FS, Width);
+        PrintStringCell(Sep, FS, Width, 0);
     }
 }
 
 static inline
 void PrintTopRuler(document *Doc, int Margin) {
-    int j;
     char Name[2] = "A";
 
     /* @TEMP: for now there can be now more than 26 columns. */
     if (Doc->Properties & DOC_PRINT_SIDE) {
-        printf("%*s  ", Margin, EmptyString);
+        printf("%*s  ", Margin, "");
     }
 
-    for (j = 0; j < Doc->ColumnCount - 1; ++j) {
-        PrintStringCell(Name, INNER_FS, Doc->Column[j].Width);
+    for (int i = 0; i < Doc->ColumnCount; ++i) {
+        char *FS = i == Doc->ColumnCount - 1? OUTER_FS: INNER_FS;
+        PrintStringCell(Name, FS, Doc->Column[i].Width, 0);
         ++Name[0];
     }
-
-    PrintStringCell(Name, OUTER_FS, Doc->Column[j].Width);
 }
 
 static inline
 void PrintColumnWidths(document *Doc, int Margin) {
-    int Width;
-    int i;
-
     if (Doc->Properties & DOC_PRINT_SIDE) {
-        printf("%*s  ", Margin, EmptyString);
+        printf("%*s  ", Margin, "");
     }
 
-    for (i = 0; i < Doc->ColumnCount - 1; ++i) {
-        Width = Doc->Column[i].Width;
-        PrintNumCell(Width, INNER_FS, Width);
+    for (int i = 0; i < Doc->ColumnCount; ++i) {
+        char *FS = i == Doc->ColumnCount - 1? OUTER_FS: INNER_FS;
+        int Width = Doc->Column[i].Width;
+        PrintNumCell(Width, FS, Width);
     }
-
-    Width = Doc->Column[i].Width;
-    PrintNumCell(Width, OUTER_FS, Width);
 }
 
 int main(int argc, char **argv) {

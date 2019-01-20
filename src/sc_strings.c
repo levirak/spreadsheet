@@ -1,6 +1,8 @@
 #include <main.h>
 #include <sc_strings.h>
 
+#include <sc_mem.h>
+
 #include <stdlib.h>
 #include <unistd.h>
 #include <ctype.h>
@@ -37,13 +39,13 @@ ssize_t GetLine(char *Buf, size_t BufSz, int FileHandle) {
 
 /* NOTE: this function does not validate glyphs */
 int GlyphCount(char *Str) {
-    int count = 0;
+    int Count = 0;
 
     for (char *Cur = Str; *Cur; ++Cur) {
-        count += ((*Cur & '\xc0') != '\x80');
+        Count += ((*Cur & '\xc0') != '\x80');
     }
 
-    return count;
+    return Count;
 }
 
 size_t StringSize(char *Str) {
@@ -115,25 +117,40 @@ char *Strip(char *Str) {
     return Str;
 }
 
-void PrintStringCell(char *Cell, char *Delim, int Width) {
-    char *Cur;
-    char Deleted = '\0';
-    int Count = 0;
-    for (Cur = Cell; *Cur; ++Cur) {
-        Count += ((*Cur & '\xc0') != '\x80');
+void PrintStringCell(char *Cell, char *Delim, int Width, int Align) {
+    static char Buffer[MAX_COLUMN_WIDTH+1];
+    static char *const End = Buffer + ArrayCount(Buffer);
 
-        /* TODO: glyphs with double width */
-        if (Count > Width) {
-            Deleted = *Cur;
-            *Cur = '\0';
-            break;
-        }
+    char *Cur = Buffer;
+    size_t Count = GlyphCount(Cell);
+
+    Assert(Width < (int)ArrayCount(Buffer));
+
+    switch (Align) {
+    case ALIGN_LEFT:
+        Cur += BufferString(Cur, End - Cur, Cell);
+        BufferSpaces(Cur, End - Cur, Width - Count);
+        break;
+    case ALIGN_CENTER: {
+        size_t FirstSpaces = (Width - Count) / 2;
+        size_t SecondSpaces = (Width - Count) - FirstSpaces;
+
+        Cur += BufferSpaces(Cur, End - Cur, FirstSpaces);
+        Cur += BufferString(Cur, End - Cur, Cell);
+        BufferSpaces(Cur, End - Cur, SecondSpaces);
+        } break;
+    case ALIGN_RIGHT:
+        Cur += BufferSpaces(Cur, End - Cur, Width - Count);
+        BufferString(Cur, End - Cur, Cell);
+        break;
+    default:
+        InvalidCodePath;
     }
 
-    /* TODO: process fields ourself to add proper alignment */
-    printf("%-*s%s", Width, Cell, Delim);
+    Buffer[Width] = '\0';
 
-    *Cur = Deleted;
+    fputs(Buffer, stdout);
+    fputs(Delim, stdout);
 }
 
 void PrintNumCell(int cell, char *delim, int width) {
@@ -144,7 +161,7 @@ void PrintNumCell(int cell, char *delim, int width) {
 
 
 size_t BufferString(char *Buffer, size_t Size, char *String) {
-    char *End = Buffer + Size;
+    char *End = Buffer + Size - 1;
 
     char *BCur = Buffer;
     char *SCur = String;
@@ -160,7 +177,30 @@ size_t BufferString(char *Buffer, size_t Size, char *String) {
         }
     }
 
+    *BCur = '\0';
+
     return SCur - String;
+}
+
+size_t BufferSpaces(char *Buffer, size_t Size, int Count) {
+    char *End;
+
+    if (Count < 0 || (size_t)Count < Size - 1) {
+        End = Buffer + Count;
+    }
+    else {
+        End = Buffer + Size - 1;
+    }
+
+    char *Cur = Buffer;
+
+    while (Cur < End) {
+        *Cur++ = ' ';
+    }
+
+    *Cur = '\0';
+
+    return Cur - Buffer;
 }
 
 int StringToPositiveInt(char *Str) {

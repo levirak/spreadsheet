@@ -109,6 +109,29 @@ document *ReadDocumentRelativeTo(document *Doc, char *FileName) {
                         NewDocument->Properties |= DOC_PRINT_HEAD_SEP;
                     }
                 }
+                else if (CompareString(Word, "align") == 0) {
+                    int Align = 0;
+                    while (*RHS) {
+                        RHS = BreakOffWord(Word = RHS);
+
+                        switch (Word[0]) {
+                        case 'l':
+                            Align = ALIGN_LEFT;
+                            break;
+                        case 'c':
+                            Align = ALIGN_CENTER;
+                            break;
+                        case 'r':
+                            Align = ALIGN_RIGHT;
+                            break;
+                        default:
+                            Error("Unknown alignment specifier '%c'", Word[0]);
+                            break;
+                        }
+
+                        GetColumn(NewDocument, ColumnIndex++)->Align = Align;
+                    }
+                }
                 else {
                     Error("Unknown command :%s", Word);
                 }
@@ -155,12 +178,12 @@ column *GetColumn(document *Doc, int ColumnIndex) {
         while (Doc->ColumnCount >= Doc->ColumnCap) {
             Doc->ColumnCap *= 2;
             Doc->Column = realloc(Doc->Column,
-                                Doc->ColumnCap * sizeof *Doc->Column);
+                                  Doc->ColumnCap * sizeof *Doc->Column);
         }
 
         column *Column = Doc->Column + Doc->ColumnCount++;
 
-#       define INITIAL_ROW_CAP 1
+#       define INITIAL_ROW_CAP 8
 
         *Column = (column){
             .Width = DEFAULT_CELL_WIDTH,
@@ -187,7 +210,7 @@ cell *GetCell(document *Doc, int ColumnIndex, int RowIndex) {
 
         *Cell = (cell){
             .Status = 0,
-            .Value = EmptyString,
+            .Value = "",
         };
     }
 

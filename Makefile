@@ -43,10 +43,12 @@ $(build_dir):
 	@echo "  MKDIR $@"
 	@mkdir -p $@
 
-.PHONY: clean
+.PHONY: clean cleaner
 clean:
 	@echo "  RM    $(build_dir)"
 	@rm -rf $(build_dir)
+
+cleaner: clean
 	@echo "  RM    tags"
 	@rm -f tags
 
