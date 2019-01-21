@@ -257,7 +257,6 @@ ptrdiff_t PushString(document *Doc, char *InString) {
         }
         while (Doc->StringStackCap < Doc->StringStackUsed);
 
-        Debug("Reallocating the string stack.");
         Doc->StringStack = realloc(Doc->StringStack, Doc->StringStackCap);
     }
 

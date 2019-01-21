@@ -66,7 +66,7 @@ typedef struct document {
     int DirFD;
 } document;
 
-#define INITIAL_STRING_STACK_SIZE 256 /* TODO: figure out a better number */
+#define INITIAL_STRING_STACK_SIZE 1024 /* TODO: figure out a better number */
 ptrdiff_t PushString(document *Document, char *String);
 
 #define ReadDocument(P) ReadDocumentRelativeTo(NULL, P)

@@ -76,8 +76,7 @@ void PrintHeadRow(document *Doc, int Row, int Margin) {
 
         Sep[Width] = '\0';
 
-        fputs(Sep, stdout);
-        fputs(FS, stdout);
+        printf("%s%s", Sep, FS);
     }
 }
 

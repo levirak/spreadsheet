@@ -164,10 +164,7 @@ void PrintCell(document *Doc, cell *Cell, char *Delim, int Width, int Align) {
         InvalidCodePath;
     }
 
-    Buffer[Width] = '\0';
-
-    fputs(Buffer, stdout);
-    fputs(Delim, stdout);
+    printf("%s%s", Buffer, Delim);
 }
 
 void PrintNumber(int cell, char *delim, int width, int Align) {
