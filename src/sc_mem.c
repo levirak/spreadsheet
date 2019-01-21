@@ -21,15 +21,19 @@ document *AllocDocument() {
         .ColumnCount = 0,
         .Column = malloc(sizeof *Doc->Column * INITIAL_COLUMN_CAP),
 
-        .StringStackUsed = 0,
-        .StringStack = malloc(STRING_STACK_SIZE),
+        .StringStackCap = INITIAL_STRING_STACK_SIZE,
+        /* The empty string is going to be "pre-buffered" at offset 0 */
+        .StringStackUsed = 1,
+        .StringStack = malloc(INITIAL_STRING_STACK_SIZE),
     };
+
+    Doc->StringStack[0] = '\0';
 
     return Doc;
 }
 
 document *ReadDocumentRelativeTo(document *Doc, char *FileName) {
-    char Buffer[1024];
+    char Buffer[256];
     document *NewDocument;
 
     int DirFD = Doc? Doc->DirFD: AT_FDCWD;
@@ -149,7 +153,7 @@ document *ReadDocumentRelativeTo(document *Doc, char *FileName) {
                     Cell->Status |= CELL_FUNCTION;
                 }
 
-                Cell->Value = PushString(NewDocument, String);
+                Cell->Offset = PushString(NewDocument, String);
             }
 
             ++RowIndex;
@@ -210,7 +214,7 @@ cell *GetCell(document *Doc, int ColumnIndex, int RowIndex) {
 
         *Cell = (cell){
             .Status = 0,
-            .Value = "",
+            .Offset = 0,
         };
     }
 
@@ -238,15 +242,31 @@ void MemCopy(void *Destination, size_t Size, void *Source) {
     }
 }
 
-char *PushString(document *Doc, char *InString) {
-    char *OutString = Doc->StringStack + Doc->StringStackUsed;
+ptrdiff_t PushString(document *Doc, char *InString) {
     size_t Length = StringSize(InString) + 1;
+    size_t Offset = Doc->StringStackUsed;
+
+    Assert(Doc->StringStackUsed <= Doc->StringStackCap);
 
     Doc->StringStackUsed += Length;
-    Assert(Doc->StringStackUsed < STRING_STACK_SIZE);
 
+    if (Doc->StringStackCap < Doc->StringStackUsed) {
+        do {
+            /* TODO: don't loop here */
+            Doc->StringStackCap += INITIAL_STRING_STACK_SIZE;
+        }
+        while (Doc->StringStackCap < Doc->StringStackUsed);
+
+        Debug("Reallocating the string stack.");
+        Doc->StringStack = realloc(Doc->StringStack, Doc->StringStackCap);
+    }
+
+    Assert(Doc->StringStackUsed <= Doc->StringStackCap);
+
+    char *OutString = Doc->StringStack + Offset;
     size_t Written = BufferString(OutString, Length, InString);
+
     Assert(Written + 1 == Length);
 
-    return OutString;
+    return OutString - Doc->StringStack;
 }

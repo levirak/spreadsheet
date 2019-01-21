@@ -41,7 +41,7 @@ void PrintRow(document *Doc, int r, int Margin) {
         if (r < Column->CellCount) {
             cell *Cell = Column->Cell + r;
             EvaluateCell(Doc, Cell);
-            PrintCell(Cell, FS, Column->Width, Column->Align);
+            PrintCell(Doc, Cell, FS, Column->Width, Column->Align);
         }
         else {
             printf("%*s%s", Column->Width, "", FS);

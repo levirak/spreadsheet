@@ -117,7 +117,7 @@ char *Strip(char *Str) {
     return Str;
 }
 
-void PrintCell(cell *Cell, char *Delim, int Width, int Align) {
+void PrintCell(document *Doc, cell *Cell, char *Delim, int Width, int Align) {
     static char Buffer[MAX_COLUMN_WIDTH+1];
     static char *const End = Buffer + ArrayCount(Buffer);
 
@@ -127,15 +127,13 @@ void PrintCell(cell *Cell, char *Delim, int Width, int Align) {
     Assert(Cell);
 
     switch (Cell->ErrorCode) {
-    case ERROR_NONE:     Value = Cell->Value;  break;
-    case ERROR_NOFILE:   Value = "E:nofile";   break;
-    case ERROR_NOREF:    Value = "E:noref";    break;
-    case ERROR_UNCLOSED: Value = "E:unclosed"; break;
-    case ERROR_CYCLE:    Value = "E:cycle";    break;
-    case ERROR_RANGE:    Value = "E:range";    break;
-    case ERROR_SUB:      Value = "E:sub";      break;
-    default:
-        InvalidCodePath;
+    case ERROR_NONE:     Value = GetValue(Doc, Cell); break;
+    case ERROR_NOFILE:   Value = "E:nofile";          break;
+    case ERROR_NOREF:    Value = "E:noref";           break;
+    case ERROR_UNCLOSED: Value = "E:unclosed";        break;
+    case ERROR_CYCLE:    Value = "E:cycle";           break;
+    case ERROR_RANGE:    Value = "E:range";           break;
+    case ERROR_SUB:      Value = "E:sub";             break;
     }
 
     Assert(Value);

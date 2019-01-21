@@ -19,7 +19,7 @@ char *FindChar(char *Str, char Delim);
 int CompareString(char *A, char *B);
 char *Strip(char *Str);
 
-void PrintCell(cell *Cell, char *Delim, int Width, int Align);
+void PrintCell(document *Doc, cell *Cell, char *Delim, int Width, int Align);
 void PrintNumber(int Num, char *Delim, int Width, int Align);
 
 size_t BufferString(char *Buffer, size_t Size, char *Str);
