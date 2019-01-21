@@ -3,11 +3,12 @@
 
 #ifdef NDEBUG
 #   define Assert(E)
+#   define InvalidCodePath
 #else
 #   include <assert.h>
 #   define Assert(E) assert(E)
 #   include <stdlib.h>
-#   define InvalidCodePath abort() /* Invalid code path */
+#   define InvalidCodePath abort()
 #endif
 
 #define ArrayCount(A) (sizeof (A) / sizeof *(A))

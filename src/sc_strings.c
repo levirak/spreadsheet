@@ -121,17 +121,32 @@ void PrintCell(cell *Cell, char *Delim, int Width, int Align) {
     static char Buffer[MAX_COLUMN_WIDTH+1];
     static char *const End = Buffer + ArrayCount(Buffer);
 
-    Assert(Cell);
-    Assert(Cell->Value);
-
     char *Cur = Buffer;
-    size_t Count = GlyphCount(Cell->Value);
+    char *Value;
+
+    Assert(Cell);
+
+    switch (Cell->ErrorCode) {
+    case ERROR_NONE:     Value = Cell->Value;  break;
+    case ERROR_NOFILE:   Value = "E:nofile";   break;
+    case ERROR_NOREF:    Value = "E:noref";    break;
+    case ERROR_UNCLOSED: Value = "E:unclosed"; break;
+    case ERROR_CYCLE:    Value = "E:cycle";    break;
+    case ERROR_RANGE:    Value = "E:range";    break;
+    case ERROR_SUB:      Value = "E:sub";      break;
+    default:
+        InvalidCodePath;
+    }
+
+    Assert(Value);
+
+    size_t Count = GlyphCount(Value);
 
     Assert(Width < (int)ArrayCount(Buffer));
 
     switch (Align) {
     case ALIGN_LEFT:
-        Cur += BufferString(Cur, End - Cur, Cell->Value);
+        Cur += BufferString(Cur, End - Cur, Value);
         BufferSpaces(Cur, End - Cur, Width - Count);
         break;
     case ALIGN_CENTER: {
@@ -140,12 +155,12 @@ void PrintCell(cell *Cell, char *Delim, int Width, int Align) {
         size_t SecondSpaces = TotalSpaces - FirstSpaces;
 
         Cur += BufferSpaces(Cur, End - Cur, FirstSpaces);
-        Cur += BufferString(Cur, End - Cur, Cell->Value);
+        Cur += BufferString(Cur, End - Cur, Value);
         BufferSpaces(Cur, End - Cur, SecondSpaces);
     } break;
     case ALIGN_RIGHT:
         Cur += BufferSpaces(Cur, End - Cur, Width - Count);
-        BufferString(Cur, End - Cur, Cell->Value);
+        BufferString(Cur, End - Cur, Value);
         break;
     default:
         InvalidCodePath;

@@ -22,13 +22,6 @@ typedef struct {
     int EndRow;
 } range;
 
-#define E_NOFILE   "E:nofile"
-#define E_NOREF    "E:noref"
-#define E_UNCLOSED "E:unclosed"
-#define E_CYCLE    "E:cycle"
-#define E_RANGE    "E:range"
-#define E_SUB      "E:sub"
-
 static inline
 bool IsReference(char *RefSpec) {
     /* @TEMP: only 26 columns possible */
@@ -210,18 +203,15 @@ char *EvaluateCell(document *Document, cell *Cell) {
                         FreeDocument(Sub);
                     }
                     else {
-                        Cell->Status |= CELL_ERROR;
-                        Cell->Value = E_NOFILE;
+                        Cell->ErrorCode = ERROR_NOFILE;
                     }
                 }
                 else {
-                    Cell->Status |= CELL_ERROR;
-                    Cell->Value = E_NOREF;
+                    Cell->ErrorCode = ERROR_NOREF;
                 }
             }
             else {
-                Cell->Status |= CELL_ERROR;
-                Cell->Value = E_UNCLOSED;
+                Cell->ErrorCode = ERROR_UNCLOSED;
             }
         }
         else if (IsReference(FunctionName)) {
@@ -232,11 +222,11 @@ char *EvaluateCell(document *Document, cell *Cell) {
 
                 if (C->Status & CELL_CLOSE_CYCLE) {
                     C->Status &= ~CELL_CLOSE_CYCLE;
-                    Cell->Status |= CELL_ERROR;
-                    Value = E_CYCLE;
+                    Cell->ErrorCode = ERROR_CYCLE;
                 }
-
-                Cell->Value = Value;
+                else {
+                    Cell->Value = PushString(Document, Value);
+                }
             }
         }
         else if (CompareString(FunctionName, "sum") == 0) {
@@ -246,7 +236,6 @@ char *EvaluateCell(document *Document, cell *Cell) {
             /* TODO: check RHS for trailing characters */
 
             if (InitRange(RangeSpec, &Range)) {
-                char *ErrorString = NULL;
                 float Sum = 0;
                 cell *C;
 
@@ -257,14 +246,12 @@ char *EvaluateCell(document *Document, cell *Cell) {
 
                         if (C->Status & CELL_CLOSE_CYCLE) {
                             C->Status &= ~CELL_CLOSE_CYCLE;
-                            Cell->Status |= CELL_ERROR;
-                            ErrorString = E_CYCLE;
+                            Cell->ErrorCode = ERROR_CYCLE;
 
                             break;
                         }
-                        else if (C->Status & CELL_ERROR) {
-                            Cell->Status |= CELL_ERROR;
-                            ErrorString = E_SUB;
+                        else if (C->ErrorCode) {
+                            Cell->ErrorCode = ERROR_SUB;
 
                             break;
                         }
@@ -277,10 +264,7 @@ char *EvaluateCell(document *Document, cell *Cell) {
                     }
                 }
 
-                if (ErrorString) {
-                    Cell->Value = ErrorString;
-                }
-                else {
+                if (!Cell->ErrorCode) {
                     char Buffer[128]; /* TMP! */
                     /* TODO: roll our own snprintf */
                     snprintf(Buffer, ArrayCount(Buffer), "%.2f", Sum);
@@ -288,7 +272,7 @@ char *EvaluateCell(document *Document, cell *Cell) {
                 }
             }
             else {
-                Cell->Value = E_RANGE;
+                Cell->ErrorCode = ERROR_RANGE;
             }
         }
 

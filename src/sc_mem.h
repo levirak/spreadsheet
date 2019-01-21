@@ -6,13 +6,22 @@
 #include <fcntl.h>
 
 #define DEFAULT_CELL_WIDTH 8
-#define MAX_COLUMN_WIDTH 1024
+#define MAX_COLUMN_WIDTH 1024 /* Necessary? */
 
 enum cell_status_flags {
     CELL_FUNCTION    = 0x01,
     CELL_EVALUATING  = 0x02,
-    CELL_ERROR       = 0x04,
-    CELL_CLOSE_CYCLE = 0x08,
+    CELL_CLOSE_CYCLE = 0x04,
+};
+
+enum cell_error_code {
+    ERROR_NONE = 0,
+    ERROR_NOFILE,
+    ERROR_NOREF,
+    ERROR_UNCLOSED,
+    ERROR_CYCLE,
+    ERROR_RANGE,
+    ERROR_SUB,
 };
 
 enum document_property_flags {
@@ -26,11 +35,12 @@ enum column_align {
     ALIGN_LEFT = 0, /* default */
     ALIGN_CENTER,
     ALIGN_RIGHT,
-    /* TODO: ALIGN_DECIMAL */
+    /* TODO: ALIGN_DECIMAL? */
 };
 
 typedef struct cell {
     int Status;
+    enum cell_error_code ErrorCode;
     char *Value; /* strings backed by the string stack */
 } cell;
 
