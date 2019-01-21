@@ -102,17 +102,20 @@ int GetNextCell(document *Doc, range *Range, cell **Cell) {
     int CellExists = 0;
     *Cell = NULL;
 
+    /* TODO: simplify logic or redesign ranges */
+
     if (Range->CurrentColumn < Doc->ColumnCount
-        && Range->CurrentColumn <= Range->EndColumn) {
+    &&  Range->CurrentColumn <= Range->EndColumn) {
         column *Column = Doc->Column + Range->CurrentColumn;
 
+        /* detect overflow */
         if (Range->CurrentRow >= Column->CellCount
-            || Range->CurrentRow > Range->EndRow) {
+        ||  Range->CurrentRow > Range->EndRow) {
             Range->CurrentRow = Range->StartRow;
             ++Range->CurrentColumn;
 
             if (Range->CurrentColumn < Doc->ColumnCount
-                && Range->CurrentColumn <= Range->EndColumn) {
+            &&  Range->CurrentColumn <= Range->EndColumn) {
                 ++Column;
             }
             else {

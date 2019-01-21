@@ -1,6 +1,8 @@
 #ifndef __sc_strings__
 #define __sc_strings__
 
+#include <sc_mem.h>
+
 #include <stdlib.h>
 #include <stdio.h>
 
@@ -16,8 +18,9 @@ char *BreakAtLastChar(char *Str, char Delim);
 char *FindChar(char *Str, char Delim);
 int CompareString(char *A, char *B);
 char *Strip(char *Str);
-void PrintStringCell(char *Cell, char *Delim, int Column, int Align);
-void PrintNumCell(int Cell, char *Delim, int Column);
+
+void PrintCell(cell *Cell, char *Delim, int Width, int Align);
+void PrintNumber(int Num, char *Delim, int Width, int Align);
 
 size_t BufferString(char *Buffer, size_t Size, char *Str);
 size_t BufferSpaces(char *Buffer, size_t Size, int Count);

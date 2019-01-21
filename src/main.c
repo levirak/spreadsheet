@@ -30,24 +30,22 @@ int DecimalWidth(unsigned int Num) {
 
 static inline
 void PrintRow(document *Doc, int r, int Margin) {
-    int c;
-    column *Column;
-    char *Value;
-
     if (Doc->Properties & DOC_PRINT_SIDE) {
         printf("%*d  ", Margin, r+1);
     }
 
-    for (c = 0; c < Doc->ColumnCount; ++c) {
+    for (int c = 0; c < Doc->ColumnCount; ++c) {
         char *FS = c == Doc->ColumnCount - 1? OUTER_FS: INNER_FS;
-        Value = "";
-        Column = Doc->Column + c;
+        column *Column = Doc->Column + c;
 
         if (r < Column->CellCount) {
-            Value = EvaluateCell(Doc, Column->Cell + r);
+            cell *Cell = Column->Cell + r;
+            EvaluateCell(Doc, Cell);
+            PrintCell(Cell, FS, Column->Width, Column->Align);
         }
-
-        PrintStringCell(Value, FS, Column->Width, Column->Align);
+        else {
+            printf("%*s%s", Column->Width, "", FS);
+        }
     }
 }
 
@@ -76,9 +74,10 @@ void PrintHeadRow(document *Doc, int Row, int Margin) {
             }
         }
 
-        Sep[Width+1] = 0;
+        Sep[Width] = '\0';
 
-        PrintStringCell(Sep, FS, Width, 0);
+        fputs(Sep, stdout);
+        fputs(FS, stdout);
     }
 }
 
@@ -88,12 +87,12 @@ void PrintTopRuler(document *Doc, int Margin) {
 
     /* @TEMP: for now there can be now more than 26 columns. */
     if (Doc->Properties & DOC_PRINT_SIDE) {
-        printf("%*s  ", Margin, "");
+        printf("%*s" MARGIN_FS, Margin, "");
     }
 
     for (int i = 0; i < Doc->ColumnCount; ++i) {
         char *FS = i == Doc->ColumnCount - 1? OUTER_FS: INNER_FS;
-        PrintStringCell(Name, FS, Doc->Column[i].Width, 0);
+        printf("%-*s%s", Doc->Column[i].Width, Name, FS);
         ++Name[0];
     }
 }
@@ -107,7 +106,7 @@ void PrintColumnWidths(document *Doc, int Margin) {
     for (int i = 0; i < Doc->ColumnCount; ++i) {
         char *FS = i == Doc->ColumnCount - 1? OUTER_FS: INNER_FS;
         int Width = Doc->Column[i].Width;
-        PrintNumCell(Width, FS, Width);
+        PrintNumber(Width, FS, Width, 0);
     }
 }
 

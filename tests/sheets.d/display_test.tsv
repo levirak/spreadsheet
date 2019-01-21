@@ -6,8 +6,7 @@
 #:format string real.2 int
 A's	numbers	more numbers
 a	0
-aa	0
-aa		3
+aa	0	3
 aaa	0	3
 aaaa	9
 aaaaa	9.3

@@ -24,6 +24,7 @@
 
 #define INNER_FS " "
 #define OUTER_FS "\n"
+#define MARGIN_FS "  "
 
 #define fallthrough __attribute__((fallthrough));
 

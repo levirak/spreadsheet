@@ -117,31 +117,35 @@ char *Strip(char *Str) {
     return Str;
 }
 
-void PrintStringCell(char *Cell, char *Delim, int Width, int Align) {
+void PrintCell(cell *Cell, char *Delim, int Width, int Align) {
     static char Buffer[MAX_COLUMN_WIDTH+1];
     static char *const End = Buffer + ArrayCount(Buffer);
 
+    Assert(Cell);
+    Assert(Cell->Value);
+
     char *Cur = Buffer;
-    size_t Count = GlyphCount(Cell);
+    size_t Count = GlyphCount(Cell->Value);
 
     Assert(Width < (int)ArrayCount(Buffer));
 
     switch (Align) {
     case ALIGN_LEFT:
-        Cur += BufferString(Cur, End - Cur, Cell);
+        Cur += BufferString(Cur, End - Cur, Cell->Value);
         BufferSpaces(Cur, End - Cur, Width - Count);
         break;
     case ALIGN_CENTER: {
-        size_t FirstSpaces = (Width - Count) / 2;
-        size_t SecondSpaces = (Width - Count) - FirstSpaces;
+        size_t TotalSpaces = Width - Count;
+        size_t FirstSpaces = TotalSpaces / 2;
+        size_t SecondSpaces = TotalSpaces - FirstSpaces;
 
         Cur += BufferSpaces(Cur, End - Cur, FirstSpaces);
-        Cur += BufferString(Cur, End - Cur, Cell);
+        Cur += BufferString(Cur, End - Cur, Cell->Value);
         BufferSpaces(Cur, End - Cur, SecondSpaces);
-        } break;
+    } break;
     case ALIGN_RIGHT:
         Cur += BufferSpaces(Cur, End - Cur, Width - Count);
-        BufferString(Cur, End - Cur, Cell);
+        BufferString(Cur, End - Cur, Cell->Value);
         break;
     default:
         InvalidCodePath;
@@ -153,8 +157,8 @@ void PrintStringCell(char *Cell, char *Delim, int Width, int Align) {
     fputs(Delim, stdout);
 }
 
-void PrintNumCell(int cell, char *delim, int width) {
-    /* TODO: process fields ourself to add proper alignment */
+void PrintNumber(int cell, char *delim, int width, int Align) {
+    (void)Align; /* TODO: process fields ourself to add proper alignment */
     printf("%-*d%s", width, cell, delim);
 }
 
