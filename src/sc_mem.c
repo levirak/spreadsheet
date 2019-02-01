@@ -63,7 +63,7 @@ document *ReadDocumentRelativeTo(document *Doc, char *FileName) {
     }
 
     int RowIndex = 0;
-    while (GetLine(Buffer, ArrayCount(Buffer), FileHandle) > 0) {
+    while (GetLine(Buffer, ArrayCount(Buffer), FileHandle) >= 0) {
         int ColumnIndex = 0;
         char *RHS = Buffer;
 
