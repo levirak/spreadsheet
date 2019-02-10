@@ -236,7 +236,8 @@ int StringToInt(char *Str, char **RHS) {
     switch (*Str) {
     case '-':
         Mod = -1;
-    fallthrough case '+':
+        fallthrough;
+    case '+':
         ++Str;
         break;
     }
@@ -258,7 +259,8 @@ float StringToReal(char *Str, char **RHS) {
     switch (*Str) {
     case '-':
         Sign = -1;
-    fallthrough case '+':
+        fallthrough;
+    case '+':
         ++Str;
         break;
     }
