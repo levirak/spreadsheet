@@ -1,8 +1,6 @@
 #include <main.h>
 #include <sc_eval.h>
 
-#include <dbg.h>
-
 #include <sc_strings.h>
 #include <sc_mem.h>
 
@@ -83,7 +81,7 @@ int InitRange(char *RangeSpec, range *Range) {
             Range->EndColumn = Range->CurrentColumn;
         }
         else {
-            Error("Unknown rangespec.");
+            PrintError("Unknown rangespec.");
         }
     }
 

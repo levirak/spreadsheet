@@ -1,5 +1,4 @@
 #include <main.h>
-#include <dbg.h> /* TODO: is Zed Shaw's dbg.h good? */
 
 #include <sc_strings.h>
 #include <sc_mem.h>

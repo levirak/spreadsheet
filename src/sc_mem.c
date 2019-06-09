@@ -1,6 +1,5 @@
 #include <main.h>
 #include <sc_mem.h>
-#include <dbg.h> /* TODO: is Zed Shaw's dbg.h good? */
 
 #include <sc_strings.h>
 
@@ -85,13 +84,13 @@ document *ReadDocumentRelativeTo(document *Doc, char *FileName) {
                         int Width = StringToInt(Word, &Trailing);
 
                         if (Width > MAX_COLUMN_WIDTH) {
-                            Error("Truncating overwide cell: %d (max %d)",
+                            PrintError("Truncating overwide cell: %d (max %d)",
                                   Width, MAX_COLUMN_WIDTH);
                             Width = MAX_COLUMN_WIDTH;
                         }
 
                         if (*Trailing) {
-                            Error("Trailing after width: %s", Word);
+                            PrintError("Trailing after width: %s", Word);
                         }
 
                         GetColumn(NewDocument, ColumnIndex++)->Width = Width;
@@ -129,7 +128,8 @@ document *ReadDocumentRelativeTo(document *Doc, char *FileName) {
                             Align = ALIGN_RIGHT;
                             break;
                         default:
-                            Error("Unknown alignment specifier '%c'", Word[0]);
+                            PrintError("Unknown alignment specifier '%c'",
+                                       Word[0]);
                             break;
                         }
 
@@ -137,7 +137,7 @@ document *ReadDocumentRelativeTo(document *Doc, char *FileName) {
                     }
                 }
                 else {
-                    Error("Unknown command :%s", Word);
+                    PrintError("Unknown command :%s", Word);
                 }
             }
         }
