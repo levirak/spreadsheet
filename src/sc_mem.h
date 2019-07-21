@@ -40,30 +40,30 @@ enum column_align {
 
 #define GetValue(D, C) ((D)->StringStack + (C)->Offset)
 typedef struct cell {
-    int Status;
+    s32 Status;
     enum cell_error_code ErrorCode;
     ptrdiff_t Offset;
 } cell;
 
 typedef struct column {
-    int Width;
-    int Align;
-    int CellCap;
-    int CellCount;
+    s32 Width;
+    s32 Align;
+    s32 CellCap;
+    s32 CellCount;
     cell *Cell;
 } column;
 
 typedef struct document {
-    int ColumnCap;
-    int ColumnCount;
+    s32 ColumnCap;
+    s32 ColumnCount;
     column *Column;
 
-    size_t StringStackCap;
-    size_t StringStackUsed;
+    mm StringStackCap;
+    mm StringStackUsed;
     char *StringStack;
 
-    int Properties;
-    int DirFD;
+    s32 Properties;
+    fd DirFD;
 } document;
 
 #define INITIAL_STRING_STACK_SIZE 1024 /* TODO: figure out a better number */
@@ -73,11 +73,11 @@ ptrdiff_t PushString(document *Document, char *String);
 document *ReadDocumentRelativeTo(document *Document, char *FileName);
 void FreeDocument(document *);
 
-column *GetColumn(document *Doc, int ColumnIndex);
-cell *GetCell(document *Doc, int ColumnIndex, int RowIndex);
+column *GetColumn(document *Doc, s32 ColumnIndex);
+cell *GetCell(document *Doc, s32 ColumnIndex, s32 RowIndex);
 
 #define MemZero(M, S) MemSet(M, S, 0)
-void MemSet(void *Destination, size_t Size, char Byte);
-void MemCopy(void *Destination, size_t Size, void *Source);
+void MemSet(void *Destination, mm Size, char Byte);
+void MemCopy(void *Destination, mm Size, void *Source);
 
 #endif

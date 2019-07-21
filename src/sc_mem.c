@@ -35,9 +35,9 @@ document *ReadDocumentRelativeTo(document *Doc, char *FileName) {
     char Buffer[256];
     document *NewDocument;
 
-    int DirFD = Doc? Doc->DirFD: AT_FDCWD;
+    s32 DirFD = Doc? Doc->DirFD: AT_FDCWD;
 
-    int FileHandle = openat(DirFD, FileName, O_RDONLY);
+    s32 FileHandle = openat(DirFD, FileName, O_RDONLY);
     if (FileHandle < 0) {
         return NULL;
     }
@@ -61,9 +61,9 @@ document *ReadDocumentRelativeTo(document *Doc, char *FileName) {
         NewDocument->DirFD = dup(DirFD);
     }
 
-    int RowIndex = 0;
+    s32 RowIndex = 0;
     while (GetLine(Buffer, ArrayCount(Buffer), FileHandle) >= 0) {
-        int ColumnIndex = 0;
+        s32 ColumnIndex = 0;
         char *RHS = Buffer;
 
         if (IsCommentChar(RHS[0])) {
@@ -81,7 +81,7 @@ document *ReadDocumentRelativeTo(document *Doc, char *FileName) {
                         char *Trailing;
 
                         RHS = BreakOffWord(Word = RHS);
-                        int Width = StringToInt(Word, &Trailing);
+                        s32 Width = StringToInt(Word, &Trailing);
 
                         if (Width > MAX_COLUMN_WIDTH) {
                             PrintError("Truncating overwide cell: %d (max %d)",
@@ -113,7 +113,7 @@ document *ReadDocumentRelativeTo(document *Doc, char *FileName) {
                     }
                 }
                 else if (CompareString(Word, "align") == 0) {
-                    int Align = 0;
+                    s32 Align = 0;
                     while (*RHS) {
                         RHS = BreakOffWord(Word = RHS);
 
@@ -165,7 +165,7 @@ document *ReadDocumentRelativeTo(document *Doc, char *FileName) {
 }
 
 void FreeDocument(document *Doc) {
-    for (int i = 0; i < Doc->ColumnCount; ++i) {
+    for (s32 i = 0; i < Doc->ColumnCount; ++i) {
         column *Column = Doc->Column + i;
 
         free(Column->Cell);
@@ -177,7 +177,7 @@ void FreeDocument(document *Doc) {
     free(Doc);
 }
 
-column *GetColumn(document *Doc, int ColumnIndex) {
+column *GetColumn(document *Doc, s32 ColumnIndex) {
     while (Doc->ColumnCount <= ColumnIndex) {
         while (Doc->ColumnCount >= Doc->ColumnCap) {
             Doc->ColumnCap *= 2;
@@ -200,7 +200,7 @@ column *GetColumn(document *Doc, int ColumnIndex) {
     return Doc->Column + ColumnIndex;
 }
 
-cell *GetCell(document *Doc, int ColumnIndex, int RowIndex) {
+cell *GetCell(document *Doc, s32 ColumnIndex, s32 RowIndex) {
     column *Column = GetColumn(Doc, ColumnIndex);
 
     while (Column->CellCount <= RowIndex) {
@@ -221,7 +221,7 @@ cell *GetCell(document *Doc, int ColumnIndex, int RowIndex) {
     return Column->Cell + RowIndex;
 }
 
-void MemSet(void *Destination, size_t Size, char Byte) {
+void MemSet(void *Destination, mm Size, char Byte) {
     char *End = (char *)Destination + Size;
 
     char *Cur = Destination;
@@ -231,7 +231,7 @@ void MemSet(void *Destination, size_t Size, char Byte) {
     }
 }
 
-void MemCopy(void *Destination, size_t Size, void *Source) {
+void MemCopy(void *Destination, mm Size, void *Source) {
     char *End = (char *)Destination + Size;
 
     char *DCur = Destination;
@@ -243,8 +243,8 @@ void MemCopy(void *Destination, size_t Size, void *Source) {
 }
 
 ptrdiff_t PushString(document *Doc, char *InString) {
-    size_t Length = StringSize(InString) + 1;
-    size_t Offset = Doc->StringStackUsed;
+    mm Length = StringSize(InString) + 1;
+    mm Offset = Doc->StringStackUsed;
 
     Assert(Doc->StringStackUsed <= Doc->StringStackCap);
 
@@ -263,7 +263,7 @@ ptrdiff_t PushString(document *Doc, char *InString) {
     Assert(Doc->StringStackUsed <= Doc->StringStackCap);
 
     char *OutString = Doc->StringStack + Offset;
-    size_t Written = BufferString(OutString, Length, InString);
+    mm Written = BufferString(OutString, Length, InString);
 
     Assert(Written + 1 == Length);
 

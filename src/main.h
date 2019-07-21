@@ -21,14 +21,22 @@
 
 #ifdef NDEBUG
 #   define Assert(...)
-#   define CheckPos(E, ...) E
-#   define CheckNeg(E, ...) E
+#   define CheckEq(E, ...) E
+#   define CheckNe(E, ...) E
+#   define CheckGt(E, ...) E
+#   define CheckLt(E, ...) E
+#   define CheckGe(E, ...) E
+#   define CheckLe(E, ...) E
 #   define InvalidCodePath
 #else
 #   include <assert.h>
 #   define Assert(E) assert(E)
-#   define CheckPos(E, V) assert(V == (E))
-#   define CheckNeg(E, V) assert(V != (E))
+#   define CheckEq(E, V) assert((E) == (V))
+#   define CheckNe(E, V) assert((E) != (V))
+#   define CheckGt(E, V) assert((E) > (V))
+#   define CheckLt(E, V) assert((E) < (V))
+#   define CheckGe(E, V) assert((E) >= (V))
+#   define CheckLe(E, V) assert((E) <= (V))
 #   include <stdlib.h>
 #   define InvalidCodePath abort()
 #endif
@@ -55,16 +63,33 @@ typedef uint16_t u16;
 typedef uint32_t u32;
 typedef uint64_t u64;
 
+typedef intptr_t  sptr;
+typedef uintptr_t ptr;
+
+#include <stddef.h>
+typedef ptrdiff_t dptr;
+typedef size_t    mm;
+typedef ssize_t   smm;
+
 #include <stdbool.h>
 
 typedef float  r32;
 typedef double r64;
 
 typedef int fd;
-typedef int pid;
+
+/* put the cannary into its cage */
+static_assert(sizeof (ptr) == sizeof (sptr));
+static_assert(sizeof (dptr) == sizeof (sptr));
+static_assert(sizeof (dptr) == sizeof (ptr));
+static_assert(sizeof (mm) == sizeof (ptr));
+static_assert(sizeof (mm) == sizeof (smm));
+static_assert(sizeof (smm) == sizeof (dptr));
 
 #define fallthrough __attribute__((fallthrough))
 /*#define macro static __attribute__((always_inline))*/
 #define inline inline __attribute((gnu_inline))
+#define noreturn _Noreturn
+#define alignof _Alignof
 
 #endif

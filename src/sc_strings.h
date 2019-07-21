@@ -6,9 +6,9 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-ssize_t GetLine(char *Buf, size_t BufSz, int FileHandle);
-int GlyphCount(char *Str);
-size_t StringSize(char *Str);
+ssize_t GetLine(char *Buf, mm BufSz, s32 FileHandle);
+s32 GlyphCount(char *Str);
+mm StringSize(char *Str);
 char *SkipWord(char *Str);
 char *SkipSpaces(char *Str);
 char *BreakOffWord(char *Str);
@@ -16,17 +16,17 @@ char *BreakOffWord(char *Str);
 char *BreakAtChar(char *Str, char Delim);
 char *BreakAtLastChar(char *Str, char Delim);
 char *FindChar(char *Str, char Delim);
-int CompareString(char *A, char *B);
+s32 CompareString(char *A, char *B);
 char *Strip(char *Str);
 
-void PrintCell(document *Doc, cell *Cell, char *Delim, int Width, int Align);
-void PrintNumber(int Num, char *Delim, int Width, int Align);
+void PrintCell(document *Doc, cell *Cell, char *Delim, s32 Width, s32 Align);
+void PrintNumber(s32 Num, char *Delim, s32 Width, s32 Align);
 
-size_t BufferString(char *Buffer, size_t Size, char *Str);
-size_t BufferSpaces(char *Buffer, size_t Size, int Count);
+mm BufferString(char *Buffer, mm Size, char *Str);
+mm BufferSpaces(char *Buffer, mm Size, s32 Count);
 
-int StringToPositiveInt(char *Str);
-int StringToInt(char *Str, char **RHS);
-float StringToReal(char *Str, char **RHS);
+s32 StringToPositiveInt(char *Str);
+s32 StringToInt(char *Str, char **RHS);
+r32 StringToReal(char *Str, char **RHS);
 
 #endif

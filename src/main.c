@@ -9,8 +9,8 @@
 
 /* basically a sparse lookup table */
 static inline
-int DecimalWidth(unsigned int Num) {
-    int Width;
+u32 DecimalWidth(u32 Num) {
+    u32 Width;
 
     /* This should cover a 32 bit integer. Add more if neccesary */
     if      (Num < 10)          Width =  1;
@@ -28,12 +28,12 @@ int DecimalWidth(unsigned int Num) {
 }
 
 static inline
-void PrintRow(document *Doc, int r, int Margin) {
+void PrintRow(document *Doc, s32 r, s32 Margin) {
     if (Doc->Properties & DOC_PRINT_SIDE) {
         printf("%*d  ", Margin, r+1);
     }
 
-    for (int c = 0; c < Doc->ColumnCount; ++c) {
+    for (s32 c = 0; c < Doc->ColumnCount; ++c) {
         char *FS = c == Doc->ColumnCount - 1? OUTER_FS: INNER_FS;
         column *Column = Doc->Column + c;
 
@@ -49,20 +49,20 @@ void PrintRow(document *Doc, int r, int Margin) {
 }
 
 static inline
-void PrintHeadRow(document *Doc, int Row, int Margin) {
+void PrintHeadRow(document *Doc, u32 Row, u32 Margin) {
     PrintRow(Doc, Row, Margin);
 
     if (Doc->Properties & DOC_PRINT_SIDE) {
         printf("%*s  ", Margin, "");
     }
 
-    for (int i = 0; i < Doc->ColumnCount; ++i) {
+    for (s32 i = 0; i < Doc->ColumnCount; ++i) {
         static char Sep[MAX_COLUMN_WIDTH+1];
 
         char *FS = i == Doc->ColumnCount - 1? OUTER_FS: INNER_FS;
-        int Width = Doc->Column[i].Width;
+        s32 Width = Doc->Column[i].Width;
 
-        for (int c = 0; c < Width; ++c) {
+        for (s32 c = 0; c < Width; ++c) {
             /* TODO: simplify logic? Remove looped conditional? */
             if ((c == 0 && Doc->Column[i].Align == ALIGN_LEFT)
             ||  (c == Width - 1 && Doc->Column[i].Align == ALIGN_RIGHT)) {
@@ -80,7 +80,7 @@ void PrintHeadRow(document *Doc, int Row, int Margin) {
 }
 
 static inline
-void PrintTopRuler(document *Doc, int Margin) {
+void PrintTopRuler(document *Doc, s32 Margin) {
     char Name[2] = "A";
 
     /* @TEMP: for now there can be now more than 26 columns. */
@@ -88,7 +88,7 @@ void PrintTopRuler(document *Doc, int Margin) {
         printf("%*s" MARGIN_FS, Margin, "");
     }
 
-    for (int i = 0; i < Doc->ColumnCount; ++i) {
+    for (s32 i = 0; i < Doc->ColumnCount; ++i) {
         char *FS = i == Doc->ColumnCount - 1? OUTER_FS: INNER_FS;
         printf("%-*s%s", Doc->Column[i].Width, Name, FS);
         ++Name[0];
@@ -96,76 +96,100 @@ void PrintTopRuler(document *Doc, int Margin) {
 }
 
 static inline
-void PrintColumnWidths(document *Doc, int Margin) {
+void PrintColumnWidths(document *Doc, s32 Margin) {
     if (Doc->Properties & DOC_PRINT_SIDE) {
         printf("%*s  ", Margin, "");
     }
 
-    for (int i = 0; i < Doc->ColumnCount; ++i) {
+    for (s32 i = 0; i < Doc->ColumnCount; ++i) {
         char *FS = i == Doc->ColumnCount - 1? OUTER_FS: INNER_FS;
-        int Width = Doc->Column[i].Width;
+        s32 Width = Doc->Column[i].Width;
         PrintNumber(Width, FS, Width, 0);
     }
 }
 
-int main(int argc, char **argv) {
-    document *Doc = NULL;
+static inline
+s32 EvalAndPrintSpreadsheet(char *FileName) {
+    document *Doc = ReadDocument(FileName);
+
+    if (Doc) {
+        s32 MaxColumnWidth = 0;
+        s32 MaxRowCount = 0;
+
+        for (s32 i = 0; i < Doc->ColumnCount; ++i) {
+            s32 ColumnWidth = Doc->Column[i].Width;
+            s32 RowCount = Doc->Column[i].CellCount;
+
+            if (ColumnWidth > MaxColumnWidth) {
+                MaxColumnWidth = ColumnWidth;
+            }
+
+            if (RowCount > MaxRowCount) {
+                MaxRowCount = RowCount;
+            }
+        }
+
+        s32 Margin = DecimalWidth(MaxColumnWidth);
+
+        if (Doc->Properties & DOC_PRINT_WIDTH) {
+            PrintColumnWidths(Doc, Margin);
+        }
+
+        if (Doc->Properties & DOC_PRINT_TOP) {
+            PrintTopRuler(Doc, Margin);
+        }
+
+        if (MaxRowCount > 0) {
+            if (Doc->Properties & DOC_PRINT_HEAD_SEP) {
+                PrintHeadRow(Doc, 0, Margin);
+            }
+            else {
+                PrintRow(Doc, 0, Margin);
+            }
+        }
+
+        for (s32 i = 1; i < MaxRowCount; ++i) {
+            PrintRow(Doc, i, Margin);
+        }
+
+        FreeDocument(Doc);
+
+        return 0;
+    }
+    else {
+        printf("Failed to open %s\n", FileName);
+        return 1;
+    }
+}
+
+s32 main(s32 argc, char **argv) {
+    bool PrintFilePaths = argc > 2;
+    s32 ReturnCode = 0;
 
     /* TODO: true argument parsing */
-    if (argc == 2) {
-        char *FileName = argv[1];
-        Doc = ReadDocument(FileName);
-        if (Doc) {
-            int MaxColumnWidth = 0;
-            int MaxRowCount = 0;
 
-            for (int i = 0; i < Doc->ColumnCount; ++i) {
-                int ColumnWidth = Doc->Column[i].Width;
-                int RowCount = Doc->Column[i].CellCount;
+    if (argc > 1) {
+        s32 i = 1;
 
-                if (ColumnWidth > MaxColumnWidth) {
-                    MaxColumnWidth = ColumnWidth;
-                }
+        for (;;) {
+            char *FileName = argv[i++];
 
-                if (RowCount > MaxRowCount) {
-                    MaxRowCount = RowCount;
-                }
+            if (PrintFilePaths) {
+                printf("%s:\n", FileName);
             }
 
-            int Margin = DecimalWidth(MaxColumnWidth);
+            /* TODO: better handling of aggregated return codes */
+            ReturnCode = EvalAndPrintSpreadsheet(FileName);
 
-            if (Doc->Properties & DOC_PRINT_WIDTH) {
-                PrintColumnWidths(Doc, Margin);
-            }
+            if (ReturnCode || i >= argc) break;
 
-            if (Doc->Properties & DOC_PRINT_TOP) {
-                PrintTopRuler(Doc, Margin);
-            }
-
-            if (MaxRowCount > 0) {
-                if (Doc->Properties & DOC_PRINT_HEAD_SEP) {
-                    PrintHeadRow(Doc, 0, Margin);
-                }
-                else {
-                    PrintRow(Doc, 0, Margin);
-                }
-            }
-
-            for (int i = 1; i < MaxRowCount; ++i) {
-                PrintRow(Doc, i, Margin);
-            }
-
-            FreeDocument(Doc);
-
-            return 0;
-        }
-        else {
-            printf("Failed to open %s\n", FileName);
-            return 1;
+            printf("\n");
         }
     }
     else {
-        printf("USAGE: %s FILE\n", argv[0]);
-        return 1;
+        printf("USAGE: %s FILE...\n", argv[0]);
+        ReturnCode = 1;
     }
+
+    return ReturnCode;
 }

@@ -8,11 +8,11 @@
 #include <ctype.h>
 
 /* NOTE: this function does not handle '\r\n' or '\r' line ends */
-ssize_t GetLine(char *Buf, size_t BufSz, int FileHandle) {
+ssize_t GetLine(char *Buf, mm BufSz, s32 FileHandle) {
     char *End = Buf + BufSz - 1; /* leave space for a '\0' */
     char *Cur;
     char C = '\0';
-    int BytesRead;
+    s32 BytesRead;
 
     for (Cur = Buf; Cur < End; ++Cur) {
         /* TODO: buffering to reduce system calls? */
@@ -38,8 +38,8 @@ ssize_t GetLine(char *Buf, size_t BufSz, int FileHandle) {
 }
 
 /* NOTE: this function does not validate glyphs */
-int GlyphCount(char *Str) {
-    int Count = 0;
+s32 GlyphCount(char *Str) {
+    s32 Count = 0;
 
     for (char *Cur = Str; *Cur; ++Cur) {
         Count += ((*Cur & '\xc0') != '\x80');
@@ -48,10 +48,10 @@ int GlyphCount(char *Str) {
     return Count;
 }
 
-size_t StringSize(char *Str) {
+mm StringSize(char *Str) {
     char *Cur = Str;
     while (*Cur) ++Cur;
-    return (size_t)Cur - (size_t)Str;
+    return (mm)(Cur - Str);
 }
 
 char *SkipWord(char *Str) {
@@ -96,7 +96,7 @@ char *FindChar(char *Str, char Delim) {
     return Str;
 }
 
-int CompareString(char *a, char *b) {
+s32 CompareString(char *a, char *b) {
     while (*a && *a == *b) {
         ++a;
         ++b;
@@ -117,7 +117,7 @@ char *Strip(char *Str) {
     return Str;
 }
 
-void PrintCell(document *Doc, cell *Cell, char *Delim, int Width, int Align) {
+void PrintCell(document *Doc, cell *Cell, char *Delim, s32 Width, s32 Align) {
     static char Buffer[MAX_COLUMN_WIDTH+1];
     static char *const End = Buffer + ArrayCount(Buffer);
 
@@ -138,9 +138,9 @@ void PrintCell(document *Doc, cell *Cell, char *Delim, int Width, int Align) {
 
     Assert(Value);
 
-    size_t Count = GlyphCount(Value);
+    mm Count = GlyphCount(Value);
 
-    Assert(Width < (int)ArrayCount(Buffer));
+    Assert(Width < (s32)ArrayCount(Buffer));
 
     switch (Align) {
     case ALIGN_LEFT:
@@ -148,9 +148,9 @@ void PrintCell(document *Doc, cell *Cell, char *Delim, int Width, int Align) {
         BufferSpaces(Cur, End - Cur, Width - Count);
         break;
     case ALIGN_CENTER: {
-        size_t TotalSpaces = Width - Count;
-        size_t FirstSpaces = TotalSpaces / 2;
-        size_t SecondSpaces = TotalSpaces - FirstSpaces;
+        mm TotalSpaces = Width - Count;
+        mm FirstSpaces = TotalSpaces / 2;
+        mm SecondSpaces = TotalSpaces - FirstSpaces;
 
         Cur += BufferSpaces(Cur, End - Cur, FirstSpaces);
         Cur += BufferString(Cur, End - Cur, Value);
@@ -167,14 +167,14 @@ void PrintCell(document *Doc, cell *Cell, char *Delim, int Width, int Align) {
     printf("%s%s", Buffer, Delim);
 }
 
-void PrintNumber(int cell, char *delim, int width, int Align) {
+void PrintNumber(s32 cell, char *delim, s32 width, s32 Align) {
     (void)Align; /* TODO: process fields ourself to add proper alignment */
     printf("%-*d%s", width, cell, delim);
 }
 
 
 
-size_t BufferString(char *Buffer, size_t Size, char *String) {
+mm BufferString(char *Buffer, mm Size, char *String) {
     char *End = Buffer + Size - 1;
 
     char *BCur = Buffer;
@@ -196,10 +196,10 @@ size_t BufferString(char *Buffer, size_t Size, char *String) {
     return SCur - String;
 }
 
-size_t BufferSpaces(char *Buffer, size_t Size, int Count) {
+mm BufferSpaces(char *Buffer, mm Size, s32 Count) {
     char *End;
 
-    if (Count < 0 || (size_t)Count < Size - 1) {
+    if (Count < 0 || (mm)Count < Size - 1) {
         End = Buffer + Count;
     }
     else {
@@ -217,8 +217,8 @@ size_t BufferSpaces(char *Buffer, size_t Size, int Count) {
     return Cur - Buffer;
 }
 
-int StringToPositiveInt(char *Str) {
-    int Result = 0;
+s32 StringToPositiveInt(char *Str) {
+    s32 Result = 0;
 
     while (isdigit(*Str)) {
         Result = 10*Result + (*Str++ - '0');
@@ -229,9 +229,9 @@ int StringToPositiveInt(char *Str) {
     return Result;
 }
 
-int StringToInt(char *Str, char **RHS) {
-    int Result = 0;
-    int Mod = 1;
+s32 StringToInt(char *Str, char **RHS) {
+    s32 Result = 0;
+    s32 Mod = 1;
 
     switch (*Str) {
     case '-':
@@ -250,11 +250,11 @@ int StringToInt(char *Str, char **RHS) {
     return Mod * Result;
 }
 
-float StringToReal(char *Str, char **RHS) {
-    float High = 0;
-    float Low = 0;
-    float Fraction = 1;
-    float Sign = 1;
+r32 StringToReal(char *Str, char **RHS) {
+    r32 High = 0;
+    r32 Low = 0;
+    r32 Fraction = 1;
+    r32 Sign = 1;
 
     switch (*Str) {
     case '-':
@@ -266,14 +266,14 @@ float StringToReal(char *Str, char **RHS) {
     }
 
     while (isdigit(*Str)) {
-        High = 10*High + (float)(*Str++ - '0');
+        High = 10*High + (r32)(*Str++ - '0');
         if (*Str == ',') ++Str;
     }
 
     if (*Str == '.') {
         ++Str;
         while (isdigit(*Str)) {
-            Low = 10*Low + (float)(*Str++ - '0');
+            Low = 10*Low + (r32)(*Str++ - '0');
             Fraction *= 10;
         }
     }

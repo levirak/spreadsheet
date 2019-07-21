@@ -12,12 +12,12 @@
 #include <unistd.h>
 
 typedef struct {
-    int StartColumn;
-    int StartRow;
-    int CurrentColumn;
-    int CurrentRow;
-    int EndColumn;
-    int EndRow;
+    s32 StartColumn;
+    s32 StartRow;
+    s32 CurrentColumn;
+    s32 CurrentRow;
+    s32 EndColumn;
+    s32 EndRow;
 } range;
 
 static inline
@@ -33,8 +33,8 @@ cell *GetRefCell(document *Doc, char *RefSpec) {
     cell *Cell = NULL;
 
     /* TODO: more columns */
-    int ColumnIndex = *RefSpec - 'A';
-    int RowIndex = StringToPositiveInt(RefSpec+1) - 1;
+    s32 ColumnIndex = *RefSpec - 'A';
+    s32 RowIndex = StringToPositiveInt(RefSpec+1) - 1;
 
     if (ColumnIndex < Doc->ColumnCount) {
         column *Column = Doc->Column + ColumnIndex;
@@ -48,9 +48,9 @@ cell *GetRefCell(document *Doc, char *RefSpec) {
 
 
 static inline
-int InitRange(char *RangeSpec, range *Range) {
+s32 InitRange(char *RangeSpec, range *Range) {
     /* @TEMP: only 26 columns possible */
-    int IsValidCell = 0;
+    s32 IsValidCell = 0;
     char *RHS;
 
     if (IsReference(RangeSpec)) {
@@ -89,8 +89,8 @@ int InitRange(char *RangeSpec, range *Range) {
 }
 
 static inline
-int GetNextCell(document *Doc, range *Range, cell **Cell) {
-    int CellExists = 0;
+s32 GetNextCell(document *Doc, range *Range, cell **Cell) {
+    s32 CellExists = 0;
     *Cell = NULL;
 
     /* TODO: simplify logic or redesign ranges */
@@ -234,7 +234,7 @@ char *EvaluateCell(document *Document, cell *Cell) {
             /* TODO: check RHS for trailing characters */
 
             if (InitRange(RangeSpec, &Range)) {
-                float Sum = 0;
+                r32 Sum = 0;
                 cell *C;
 
                 while (GetNextCell(Document, &Range, &C)) {
@@ -255,7 +255,7 @@ char *EvaluateCell(document *Document, cell *Cell) {
                         }
                         else {
                             char *Str = GetValue(Document, C);
-                            float Real = StringToReal(SkipSpaces(Str), &RHS);
+                            r32 Real = StringToReal(SkipSpaces(Str), &RHS);
                             /* TODO: check RHS for trailing characters */
                             Sum += Real;
                         }
