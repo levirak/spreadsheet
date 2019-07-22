@@ -48,10 +48,10 @@ document *ReadDocumentRelativeTo(document *Doc, char *FileName) {
     BufferString(Buffer, ArrayCount(Buffer), FileName);
     if (BreakAtLastChar(Buffer, '/') && CompareString(Buffer, ".") != 0) {
         if (*Buffer) {
-            NewDocument->DirFD = open(Buffer, O_DIRECTORY | O_RDONLY);
+            NewDocument->DirFD = openat(DirFD, Buffer, O_DIRECTORY | O_RDONLY);
         }
         else {
-            NewDocument->DirFD = open("/", O_DIRECTORY | O_RDONLY);
+            NewDocument->DirFD = openat(DirFD, "/", O_DIRECTORY | O_RDONLY);
         }
     }
     else if (DirFD == AT_FDCWD) {
