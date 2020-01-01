@@ -185,31 +185,32 @@ char *EvaluateCell(document *Document, cell *Cell) {
 
         if (FunctionName[0] == '{') {
             char *RHS = BreakAtLastChar(FunctionName, '}');
-            if (RHS) {
+
+            if (!RHS) {
+                Cell->ErrorCode = ERROR_UNCLOSED;
+            }
+            else {
                 ++FunctionName;
                 RHS = BreakAtLastChar(FunctionName, ':');
 
-                if (RHS && IsReference(RHS)) {
+                if (!RHS || !IsReference(RHS)) {
+                    Cell->ErrorCode = ERROR_NOREF;
+                }
+                else {
                     /* TODO: cache this document (?), so that multiple
                      * references don't pull it in freash every time */
                     document *Sub = ReadDocumentRelativeTo(Document,
                                                            FunctionName);
-                    if (Sub) {
+                    if (!Sub) {
+                        Cell->ErrorCode = ERROR_NOFILE;
+                    }
+                    else {
                         char *Value = EvaluateCell(Sub, GetRefCell(Sub, RHS));
                         Cell->Offset = PushString(Document, Value);
 
                         FreeDocument(Sub);
                     }
-                    else {
-                        Cell->ErrorCode = ERROR_NOFILE;
-                    }
                 }
-                else {
-                    Cell->ErrorCode = ERROR_NOREF;
-                }
-            }
-            else {
-                Cell->ErrorCode = ERROR_UNCLOSED;
             }
         }
         else if (IsReference(FunctionName)) {
@@ -233,7 +234,10 @@ char *EvaluateCell(document *Document, cell *Cell) {
             RHS = BreakAtChar(RangeSpec, ')');
             /* TODO: check RHS for trailing characters */
 
-            if (InitRange(RangeSpec, &Range)) {
+            if (!InitRange(RangeSpec, &Range)) {
+                Cell->ErrorCode = ERROR_RANGE;
+            }
+            else {
                 r32 Sum = 0;
                 cell *C;
 
@@ -249,9 +253,7 @@ char *EvaluateCell(document *Document, cell *Cell) {
                             break;
                         }
                         else if (C->ErrorCode) {
-                            Cell->ErrorCode = ERROR_SUB;
-
-                            break;
+                            Sum += 0.0f;
                         }
                         else {
                             char *Str = GetValue(Document, C);
@@ -268,9 +270,6 @@ char *EvaluateCell(document *Document, cell *Cell) {
                     snprintf(Buffer, ArrayCount(Buffer), "%.2f", Sum);
                     Cell->Offset = PushString(Document, Buffer);
                 }
-            }
-            else {
-                Cell->ErrorCode = ERROR_RANGE;
             }
         }
 
