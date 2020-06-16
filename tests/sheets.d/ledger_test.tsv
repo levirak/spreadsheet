@@ -1,0 +1,10 @@
+=sum(A2:B2)
+=sum(A3:)	=sum(B3:)	date	means	description
+100		2018-11-15	cash	initial cash
+	-1.26	2018-11-16	cash	tea
+#balance	#credit	#debit
+
+#:width 16 16 16 32 8
+#:print head_sep 2
+#:align r r r c
+# vim: ts=16 sw=16 noet
