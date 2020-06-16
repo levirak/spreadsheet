@@ -139,17 +139,13 @@ s32 EvalAndPrintSpreadsheet(char *FileName) {
             PrintTopRuler(Doc, Margin);
         }
 
-        if (MaxRowCount > 0) {
-            if (Doc->Properties & DOC_PRINT_HEAD_SEP) {
-                PrintHeadRow(Doc, 0, Margin);
+        for (s32 i = 0; i < MaxRowCount; ++i) {
+            if (Doc->Properties & DOC_PRINT_HEAD_SEP && i == Doc->HeadSepIdx) {
+                PrintHeadRow(Doc, i, Margin);
             }
             else {
-                PrintRow(Doc, 0, Margin);
+                PrintRow(Doc, i, Margin);
             }
-        }
-
-        for (s32 i = 1; i < MaxRowCount; ++i) {
-            PrintRow(Doc, i, Margin);
         }
 
         FreeDocument(Doc);

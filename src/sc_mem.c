@@ -110,6 +110,19 @@ document *ReadDocumentRelativeTo(document *Doc, char *FileName) {
                     }
                     else if (CompareString(Word, "head_sep") == 0) {
                         NewDocument->Properties |= DOC_PRINT_HEAD_SEP;
+
+                        RHS = BreakOffWord(Word = RHS);
+
+                        if (*Word) {
+                            char *Trailing;
+                            s32 Row = StringToInt(Word, &Trailing);
+
+                            if (*Trailing) {
+                                PrintError("Trailing after width: %s", Word);
+                            }
+
+                            NewDocument->HeadSepIdx = Row - 1;
+                        }
                     }
                 }
                 else if (CompareString(Word, "align") == 0) {

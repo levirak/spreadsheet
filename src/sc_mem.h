@@ -64,6 +64,7 @@ typedef struct document {
 
     s32 Properties;
     fd DirFD;
+    s32 HeadSepIdx;
 } document;
 
 #define INITIAL_STRING_STACK_SIZE 1024 /* TODO: figure out a better number */
