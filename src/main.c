@@ -6,6 +6,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <locale.h>
 
 /* basically a sparse lookup table */
 static inline
@@ -161,6 +162,9 @@ s32 EvalAndPrintSpreadsheet(char *FileName) {
 s32 main(s32 argc, char **argv) {
     bool PrintFilePaths = argc > 2;
     s32 ReturnCode = 0;
+
+    /* TODO(lrak): try take locale from environment */
+    setlocale(LC_ALL, "en_US.UTF-8");
 
     /* TODO: true argument parsing */
 

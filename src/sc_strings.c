@@ -119,7 +119,8 @@ char *Strip(char *Str) {
 
 void PrintCell(document *Doc, cell *Cell, char *Delim, s32 Width, s32 Align) {
     static char Buffer[MAX_COLUMN_WIDTH+1];
-    static char *const End = Buffer + ArrayCount(Buffer);
+    static char ValueBuffer[MAX_COLUMN_WIDTH+1];
+    static char *End = Buffer + ArrayCount(Buffer);
 
     char *Cur = Buffer;
     char *Value;
@@ -137,6 +138,14 @@ void PrintCell(document *Doc, cell *Cell, char *Delim, s32 Width, s32 Align) {
     }
 
     Assert(Value);
+
+    char *RHS;
+    r32 Real = StringToReal(Value, &RHS);
+    if (*RHS == 0) {
+        /* value parsed as a number. Format it. */
+        snprintf(ValueBuffer, sizeof ValueBuffer, "%'.02f", Real);
+        Value = ValueBuffer;
+    }
 
     mm Count = GlyphCount(Value);
 

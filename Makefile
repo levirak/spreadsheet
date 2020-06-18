@@ -12,7 +12,7 @@ LDLIBS  = -pthread -lm
 
 OPTFLAGS          := $(CFLAGS)
 override CPPFLAGS := -g -std=gnu11 $(CPPFLAGS) $(CPPDIRS)
-override CFLAGS   := -Wall -Wextra -Wpedantic $(CFLAGS) -fsanitize=address,undefined
+override CFLAGS   := -Wall -Wextra $(CFLAGS) -fsanitize=address,undefined
 override LDFLAGS  := $(LDFLAGS) $(LDDIRS)
 
 sources      = $(wildcard $(source_dir)/*.c)
