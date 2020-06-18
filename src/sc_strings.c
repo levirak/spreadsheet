@@ -117,6 +117,28 @@ char *Strip(char *Str) {
     return Str;
 }
 
+bool LooksLikeReal(char *Str) {
+    bool HasDecimal = false;
+
+    if (*Str) {
+        switch (*Str) {
+        case '-': ++Str; break;
+        case '+': ++Str; break;
+        default: break;
+        }
+
+        while (isdigit(*Str) || *Str == ',') ++Str;
+
+        if (*Str == '.') {
+            HasDecimal = true;
+            ++Str;
+            while (isdigit(*Str)) ++Str;
+        }
+    }
+
+    return HasDecimal && *Str == '\0';
+}
+
 void PrintCell(document *Doc, cell *Cell, char *Delim, s32 Width, s32 Align) {
     static char Buffer[MAX_COLUMN_WIDTH+1];
     static char ValueBuffer[MAX_COLUMN_WIDTH+1];
@@ -139,12 +161,14 @@ void PrintCell(document *Doc, cell *Cell, char *Delim, s32 Width, s32 Align) {
 
     Assert(Value);
 
-    char *RHS;
-    r32 Real = StringToReal(Value, &RHS);
-    if (*RHS == 0) {
-        /* value parsed as a number. Format it. */
-        snprintf(ValueBuffer, sizeof ValueBuffer, "%'.02f", Real);
-        Value = ValueBuffer;
+    if (LooksLikeReal(Value)) {
+        char *RHS;
+        r32 Real = StringToReal(Value, &RHS);
+        if (!*RHS) {
+            /* value parsed as a number. Format it. */
+            snprintf(ValueBuffer, sizeof ValueBuffer, "%'.02f", Real);
+            Value = ValueBuffer;
+        }
     }
 
     mm Count = GlyphCount(Value);
