@@ -208,25 +208,20 @@ void PrintNumber(s32 cell, char *delim, s32 width, s32 Align) {
 
 
 mm BufferString(char *Buffer, mm Size, char *String) {
+    Assert(Buffer);
+    Assert(Size);
+    Assert(String);
+
     char *End = Buffer + Size - 1;
+    char *Cur = String;
 
-    char *BCur = Buffer;
-    char *SCur = String;
-
-    while (BCur < End) {
-        *BCur++ = *SCur;
-
-        if (*SCur) {
-            ++SCur;
-        }
-        else {
-            break;
-        }
+    while (Buffer < End && *Cur) {
+        *Buffer++ = *Cur++;
     }
 
-    *BCur = '\0';
+    *Buffer = '\0';
 
-    return SCur - String;
+    return Cur - String;
 }
 
 mm BufferSpaces(char *Buffer, mm Size, s32 Count) {
