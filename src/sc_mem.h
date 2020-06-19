@@ -38,11 +38,10 @@ enum column_align {
     /* TODO: ALIGN_DECIMAL? */
 };
 
-#define GetValue(D, C) ((D)->StringStack + (C)->Offset)
 typedef struct cell {
     s32 Status;
     enum cell_error_code ErrorCode;
-    ptrdiff_t Offset;
+    char *Value;
 } cell;
 
 typedef struct column {
@@ -58,9 +57,7 @@ typedef struct document {
     s32 ColumnCount;
     column *Column;
 
-    mm StringStackCap;
-    mm StringStackUsed;
-    char *StringStack;
+    struct page *Strings;
 
     s32 Properties;
     fd DirFD;
@@ -68,7 +65,7 @@ typedef struct document {
 } document;
 
 #define INITIAL_STRING_STACK_SIZE 1024 /* TODO: figure out a better number */
-ptrdiff_t PushString(document *Document, char *String);
+char *PushString(document *Document, char *String);
 
 #define ReadDocument(P) ReadDocumentRelativeTo(NULL, P)
 document *ReadDocumentRelativeTo(document *Document, char *FileName);

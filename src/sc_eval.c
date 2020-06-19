@@ -131,9 +131,9 @@ char *EvaluateCell(document *Document, cell *Cell) {
     else if (Cell->Status & CELL_FUNCTION) {
         Cell->Status |= CELL_EVALUATING;
 
-        Assert(GetValue(Document, Cell)[0] == EVAL_CHAR);
+        Assert(Cell->Value[0] == EVAL_CHAR);
 
-        char *FunctionName = GetValue(Document, Cell) + 1;
+        char *FunctionName = Cell->Value + 1;
         char *RHS = BreakAtChar(FunctionName, '(');
 
         /* TODO: make a true and proper expression language.
@@ -206,7 +206,7 @@ char *EvaluateCell(document *Document, cell *Cell) {
                     }
                     else {
                         char *Value = EvaluateCell(Sub, GetRefCell(Sub, RHS));
-                        Cell->Offset = PushString(Document, Value);
+                        Cell->Value = PushString(Document, Value);
 
                         FreeDocument(Sub);
                     }
@@ -224,7 +224,7 @@ char *EvaluateCell(document *Document, cell *Cell) {
                     Cell->ErrorCode = ERROR_CYCLE;
                 }
                 else {
-                    Cell->Offset = PushString(Document, Value);
+                    Cell->Value = PushString(Document, Value);
                 }
             }
         }
@@ -256,7 +256,7 @@ char *EvaluateCell(document *Document, cell *Cell) {
                             Sum += 0.0f;
                         }
                         else {
-                            char *Str = GetValue(Document, C);
+                            char *Str = C->Value;
                             r32 Real = StringToReal(SkipSpaces(Str), &RHS);
                             /* TODO: check RHS for trailing characters */
                             Sum += Real;
@@ -268,7 +268,7 @@ char *EvaluateCell(document *Document, cell *Cell) {
                     char Buffer[128]; /* TMP! */
                     /* TODO: roll our own snprintf */
                     snprintf(Buffer, ArrayCount(Buffer), "%.2f", Sum);
-                    Cell->Offset = PushString(Document, Buffer);
+                    Cell->Value = PushString(Document, Buffer);
                 }
             }
         }
@@ -276,5 +276,5 @@ char *EvaluateCell(document *Document, cell *Cell) {
         Cell->Status &= ~(CELL_EVALUATING | CELL_FUNCTION);
     }
 
-    return GetValue(Document, Cell);
+    return Cell->Value;
 }

@@ -9,10 +9,13 @@
 
 /* NOTE: this function does not handle '\r\n' or '\r' line ends */
 ssize_t GetLine(char *Buf, mm BufSz, s32 FileHandle) {
+    Assert(Buf);
+    Assert(BufSz);
+
     char *End = Buf + BufSz - 1; /* leave space for a '\0' */
     char *Cur;
     char C = '\0';
-    s32 BytesRead;
+    s32 BytesRead = 0;
 
     for (Cur = Buf; Cur < End; ++Cur) {
         /* TODO: buffering to reduce system calls? */
@@ -139,7 +142,7 @@ bool LooksLikeReal(char *Str) {
     return HasDecimal && *Str == '\0';
 }
 
-void PrintCell(document *Doc, cell *Cell, char *Delim, s32 Width, s32 Align) {
+void PrintCell(cell *Cell, char *Delim, s32 Width, s32 Align) {
     static char Buffer[MAX_COLUMN_WIDTH+1];
     static char ValueBuffer[MAX_COLUMN_WIDTH+1];
     static char *End = Buffer + ArrayCount(Buffer);
@@ -150,13 +153,14 @@ void PrintCell(document *Doc, cell *Cell, char *Delim, s32 Width, s32 Align) {
     Assert(Cell);
 
     switch (Cell->ErrorCode) {
-    case ERROR_NONE:     Value = GetValue(Doc, Cell); break;
-    case ERROR_NOFILE:   Value = "E:nofile";          break;
-    case ERROR_NOREF:    Value = "E:noref";           break;
-    case ERROR_UNCLOSED: Value = "E:unclosed";        break;
-    case ERROR_CYCLE:    Value = "E:cycle";           break;
-    case ERROR_RANGE:    Value = "E:range";           break;
-    case ERROR_SUB:      Value = "E:sub";             break;
+    case ERROR_NONE:     Value = Cell->Value;  break;
+    case ERROR_NOFILE:   Value = "E:nofile";   break;
+    case ERROR_NOREF:    Value = "E:noref";    break;
+    case ERROR_UNCLOSED: Value = "E:unclosed"; break;
+    case ERROR_CYCLE:    Value = "E:cycle";    break;
+    case ERROR_RANGE:    Value = "E:range";    break;
+    case ERROR_SUB:      Value = "E:sub";      break;
+    default:             Value = "E:unknown";  break;
     }
 
     Assert(Value);
@@ -219,8 +223,9 @@ mm BufferString(char *Buffer, mm Size, char *String) {
         *Buffer++ = *Cur++;
     }
 
-    *Buffer = '\0';
+    *Buffer = '\0'; /* don't count this in the returned size */
 
+    /*return BCur - Buffer;*/
     return Cur - String;
 }
 

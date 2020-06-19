@@ -4,29 +4,34 @@
 #include <sc_strings.h>
 
 #include <stdlib.h>
+#include <stdint.h>
 
 #include <unistd.h>
 #include <sys/stat.h>
 #include <fcntl.h>
 
+typedef struct page {
+    mm Size;
+    mm Used;
+    struct page *Next;
+    char Data[0];
+} page;
+
+#define PAGE_ALLOC_SIZE (512ul)
+static_assert(PAGE_ALLOC_SIZE > sizeof (page), "Allocation size too small.");
+
 static inline
 document *AllocDocument() {
     document *Doc = malloc(sizeof *Doc);
 
-#   define INITIAL_COLUMN_CAP 1
-
+#define INITIAL_COLUMN_CAP 4
     *Doc = (document){
         .ColumnCap = INITIAL_COLUMN_CAP,
         .ColumnCount = 0,
         .Column = malloc(sizeof *Doc->Column * INITIAL_COLUMN_CAP),
 
-        .StringStackCap = INITIAL_STRING_STACK_SIZE,
-        /* The empty string is going to be "pre-buffered" at offset 0 */
-        .StringStackUsed = 1,
-        .StringStack = malloc(INITIAL_STRING_STACK_SIZE),
+        .Strings = 0, /* NOTE: will be initialized later */
     };
-
-    Doc->StringStack[0] = '\0';
 
     return Doc;
 }
@@ -166,7 +171,7 @@ document *ReadDocumentRelativeTo(document *Doc, char *FileName) {
                     Cell->Status |= CELL_FUNCTION;
                 }
 
-                Cell->Offset = PushString(NewDocument, String);
+                Cell->Value = PushString(NewDocument, String);
             }
 
             ++RowIndex;
@@ -186,7 +191,12 @@ void FreeDocument(document *Doc) {
 
     if (Doc->DirFD != AT_FDCWD) close(Doc->DirFD);
     free(Doc->Column);
-    free(Doc->StringStack);
+
+    for (page *Next, *Cur = Doc->Strings; Cur; Cur = Next) {
+        Next = Cur->Next;
+        free(Cur);
+    }
+
     free(Doc);
 }
 
@@ -227,7 +237,7 @@ cell *GetCell(document *Doc, s32 ColumnIndex, s32 RowIndex) {
 
         *Cell = (cell){
             .Status = 0,
-            .Offset = 0,
+            .Value = "",
         };
     }
 
@@ -255,30 +265,44 @@ void MemCopy(void *Destination, mm Size, void *Source) {
     }
 }
 
-ptrdiff_t PushString(document *Doc, char *InString) {
+char *PushString(document *Doc, char *InString) {
+    Assert(Doc);
+    Assert(InString);
+
     mm Length = StringSize(InString) + 1;
-    mm Offset = Doc->StringStackUsed;
+    mm NumPages = 0;
 
-    Assert(Doc->StringStackUsed <= Doc->StringStackCap);
+    page **Cur = &Doc->Strings;
+    while (*Cur && (**Cur).Size <= (**Cur).Used + Length) {
+        Assert((PAGE_ALLOC_SIZE << NumPages) <= (SIZE_MAX >> 1));
 
-    Doc->StringStackUsed += Length;
-
-    if (Doc->StringStackCap < Doc->StringStackUsed) {
-        do {
-            /* TODO: don't loop here */
-            Doc->StringStackCap += INITIAL_STRING_STACK_SIZE;
-        }
-        while (Doc->StringStackCap < Doc->StringStackUsed);
-
-        Doc->StringStack = realloc(Doc->StringStack, Doc->StringStackCap);
+        Cur = &(**Cur).Next;
+        ++NumPages;
     }
 
-    Assert(Doc->StringStackUsed <= Doc->StringStackCap);
+    if (!*Cur) {
+        mm NewSize = PAGE_ALLOC_SIZE << NumPages;
 
-    char *OutString = Doc->StringStack + Offset;
-    mm Written = BufferString(OutString, Length, InString);
+        page *NewPage = malloc(NewSize);
+        *NewPage = (page){
+            .Size = NewSize - sizeof *NewPage,
+            .Used = 0,
+            .Next = 0,
+        };
+        Assert(Length <= NewPage->Size);
 
-    Assert(Written + 1 == Length);
+        *Cur = NewPage;
 
-    return OutString - Doc->StringStack;
+        Assert((char *)(*Cur) + NewSize == (**Cur).Data + (**Cur).Size);
+    }
+
+    page *Page = *Cur;
+
+    char *OutString = Page->Data + Page->Used;
+    mm Written = BufferString(OutString, Length, InString) + 1;
+    Page->Used += Written;
+
+    Assert(Written == Length);
+
+    return OutString;
 }
