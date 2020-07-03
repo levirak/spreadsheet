@@ -29,4 +29,8 @@ s32 StringToPositiveInt(char *Str);
 s32 StringToInt(char *Str, char **RHS);
 r32 StringToReal(char *Str, char **RHS);
 
+char *CellValueToString(cell_value Value, char *Buffer, mm Size);
+bool LooksLikeInt(char *Str);
+bool LooksLikeReal(char *Str);
+
 #endif

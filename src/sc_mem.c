@@ -167,11 +167,32 @@ document *ReadDocumentRelativeTo(document *Doc, char *FileName) {
 
                 cell *Cell = GetCell(NewDocument, ColumnIndex++, RowIndex);
 
-                if (IsEvalChar(String[0])) {
-                    Cell->Status |= CELL_FUNCTION;
+                if (*String) {
+                    if (LooksLikeInt(String)) {
+                        Cell->Value = (cell_value){
+                            .Type = CELL_TYPE_INT,
+                            .AsInt = StringToInt(String, 0),
+                        };
+                    }
+                    else if (LooksLikeReal(String)) {
+                        Cell->Value = (cell_value){
+                            .Type = CELL_TYPE_REAL,
+                            .AsReal = StringToReal(String, 0),
+                        };
+                    }
+                    else if (IsEvalChar(String[0])) {
+                        Cell->Value = (cell_value){
+                            .Type = CELL_TYPE_EXPR,
+                            .AsExpr = PushString(NewDocument, String + 1),
+                        };
+                    }
+                    else {
+                        Cell->Value = (cell_value){
+                            .Type = CELL_TYPE_STRING,
+                            .AsString = PushString(NewDocument, String),
+                        };
+                    }
                 }
-
-                Cell->Value = PushString(NewDocument, String);
             }
 
             ++RowIndex;
@@ -235,10 +256,7 @@ cell *GetCell(document *Doc, s32 ColumnIndex, s32 RowIndex) {
 
         cell *Cell = Column->Cell + Column->CellCount++;
 
-        *Cell = (cell){
-            .Status = 0,
-            .Value = "",
-        };
+        *Cell = (cell){};
     }
 
     return Column->Cell + RowIndex;

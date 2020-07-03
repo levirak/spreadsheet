@@ -1,7 +1,7 @@
-=sum(A2:B2)
-=sum(A3:)	=sum(B3:)	date	means	description
-1,000.00		2018-11-15	cash	initial cash
-	-1.26	2018-11-16	cash	tea
+=sum(B1:C1)	=sum(B3:)	=sum(C3:)
+Date	Credit	Debit	Means	Description
+2018-11-15	1,000.00		cash	initial cash
+2018-11-16		-1.26	cash	tea
 
 #:width 16 16 16 32 8
 #:print head_sep 2

@@ -121,159 +121,174 @@ s32 GetNextCell(document *Doc, range *Range, cell **Cell) {
     return CellExists;
 }
 
-#define MAX_BUFFER ArrayCount(((cell *)0)->Value)
-char *EvaluateCell(document *Document, cell *Cell) {
-    if (!Cell) return NULL;
-
-    if (Cell->Status & CELL_EVALUATING) {
-        Cell->Status |= CELL_CLOSE_CYCLE;
+cell_value AdoptValue(document *Document, cell_value Value) {
+    if (Value.Type == CELL_TYPE_STRING) {
+        Value.AsString = PushString(Document, Value.AsString);
     }
-    else if (Cell->Status & CELL_FUNCTION) {
-        Cell->Status |= CELL_EVALUATING;
 
-        Assert(Cell->Value[0] == EVAL_CHAR);
+    return Value;
+}
 
-        char *FunctionName = Cell->Value + 1;
-        char *RHS = BreakAtChar(FunctionName, '(');
+cell_value EvaluateCell(document *Document, cell *Cell) {
+    Assert(Cell);
 
-        /* TODO: make a true and proper expression language.
-         *
-         * By this, I mean that roughly all of the following should work at
-         * some point in the future:
-         *      =A3
-         *      =A3/A2
-         *      =-A3
-         *      =Sum(A3:A7)
-         *      =Sum(A3:A7)/Count(A3:A7)
-         *      =Sum(A3:A7)/N(A3:A7)
-         *      =Average(A3:A7)
-         *      =Avg(A3:A7)
-         *      =A3 + 2
-         *      =20% * A3
-         *      =1/4
-         *      =5
-         *      =@r1
-         *      ={./other.tsv:A1}
-         *      ={june.tsv:A1}
-         *      ={/path/to/sheet.tsv:A1}
-         *
-         * The spec would basically be that---
-         *      FN       := [a-zA-Z]+ '(' ARGUMENTS ')'
-         *      ABS_REF  := [A-Z]+[0-9]+
-         *      REL_REF  := '@'([ud][0-9]+)?([lr][0-9]+)?
-         *      EX_REF   := '{' PATH '.' IN_RANGE '}'
-         *      IN_REF   := ABS_REF | REL_REF
-         *      REF      := IN_REF | EX_REF
-         *      NUM      := [+-]?[0-9]+
-         *               |  [+-]?[0-9]*'.'[0-9]+
-         *               |  [+-]?[0-9]+'%'
-         *      EXPR     := FN | REF | NUM
-         *               |  EXPR [+-*^/] EXPR
-         *               |  '(' EXPR ')'
-         *      IN_RANGE := IN_REF':'IN_REF
-         *               |  IN_REF':'[udlr]?
-         *      RANGE    := REF | IN_RANGE
-         *      LIST     := RANGE (';' RANGE)*
-         *      COMP     := EXPR ('<' | '<=' | '=' | '=>' | '>' | '<>') EXPR
-         *               |  COMP ('&&'|'||') COMP
-         *               |  '(' COMP ')'
-         * We would then expect to find an EXPR (expression) in any cell
-         * starting with '='
-         *
-         * edit: yeah, "basically" like that
-         */
+    if (Cell->Value.Type == CELL_TYPE_EXPR) {
+        if (Cell->Status & CELL_EVALUATING) {
+            Cell->Status |= CELL_CLOSE_CYCLE;
+        }
+        else {
+            Cell->Status |= CELL_EVALUATING;
 
-        if (FunctionName[0] == '{') {
-            char *RHS = BreakAtLastChar(FunctionName, '}');
+            char *FunctionName = Cell->Value.AsExpr;
+            char *RHS = BreakAtChar(FunctionName, '(');
 
-            if (!RHS) {
-                Cell->ErrorCode = ERROR_UNCLOSED;
-            }
-            else {
-                ++FunctionName;
-                RHS = BreakAtLastChar(FunctionName, ':');
+            /* TODO: make a true and proper expression language.
+            *
+            * By this, I mean that roughly all of the following should work at
+            * some point in the future:
+            *      A3
+            *      A3/A2
+            *      -A3
+            *      Sum(A3:A7)
+            *      Sum(A3:A7)/Count(A3:A7)
+            *      Sum(A3:A7)/N(A3:A7)
+            *      Average(A3:A7)
+            *      Avg(A3:A7)
+            *      A3 + 2
+            *      20% * A3
+            *      1/4
+            *      5
+            *      @r1
+            *      {./other.tsv:A1}
+            *      {june.tsv:A1}
+            *      {/path/to/sheet.tsv:A1}
+            *
+            * The spec would basically be that---
+            *      FN       := [a-zA-Z]+ '(' ARGUMENTS ')'
+            *      ABS_REF  := [A-Z]+[0-9]+
+            *      REL_REF  := '@'([ud][0-9]+)?([lr][0-9]+)?
+            *      EX_REF   := '{' PATH '.' IN_RANGE '}'
+            *      IN_REF   := ABS_REF | REL_REF
+            *      REF      := IN_REF | EX_REF
+            *      NUM      := [+-]?[0-9]+
+            *               |  [+-]?[0-9]*'.'[0-9]+
+            *               |  [+-]?[0-9]+'%'
+            *      EXPR     := FN | REF | NUM
+            *               |  EXPR [+-*^/] EXPR
+            *               |  '(' EXPR ')'
+            *      IN_RANGE := IN_REF':'IN_REF
+            *               |  IN_REF':'[udlr]?
+            *      RANGE    := REF | IN_RANGE
+            *      LIST     := RANGE (';' RANGE)*
+            *      COMP     := EXPR ('<' | '<=' | '=' | '=>' | '>' | '<>') EXPR
+            *               |  COMP ('&&'|'||') COMP
+            *               |  '(' COMP ')'
+            * We would then expect to find an EXPR (expression) in any cell
+            * starting with '='
+            *
+            * edit: yeah, "basically" like that
+            */
 
-                if (!RHS || !IsReference(RHS)) {
-                    Cell->ErrorCode = ERROR_NOREF;
+            if (FunctionName[0] == '{') {
+                char *RHS = BreakAtLastChar(FunctionName, '}');
+
+                if (!RHS) {
+                    Cell->ErrorCode = ERROR_UNCLOSED;
                 }
                 else {
-                    /* TODO: cache this document (?), so that multiple
-                     * references don't pull it in freash every time */
-                    document *Sub = ReadDocumentRelativeTo(Document,
-                                                           FunctionName);
-                    if (!Sub) {
-                        Cell->ErrorCode = ERROR_NOFILE;
+                    ++FunctionName;
+                    RHS = BreakAtLastChar(FunctionName, ':');
+
+                    if (!RHS || !IsReference(RHS)) {
+                        Cell->ErrorCode = ERROR_NOREF;
                     }
                     else {
-                        char *Value = EvaluateCell(Sub, GetRefCell(Sub, RHS));
-                        Cell->Value = PushString(Document, Value);
-
-                        FreeDocument(Sub);
-                    }
-                }
-            }
-        }
-        else if (IsReference(FunctionName)) {
-            cell *C = GetRefCell(Document, FunctionName);
-
-            if (C) {
-                char *Value = EvaluateCell(Document, C);
-
-                if (C->Status & CELL_CLOSE_CYCLE) {
-                    C->Status &= ~CELL_CLOSE_CYCLE;
-                    Cell->ErrorCode = ERROR_CYCLE;
-                }
-                else {
-                    Cell->Value = PushString(Document, Value);
-                }
-            }
-        }
-        else if (CompareString(FunctionName, "sum") == 0) {
-            range Range;
-            char *RangeSpec = RHS;
-            RHS = BreakAtChar(RangeSpec, ')');
-            /* TODO: check RHS for trailing characters */
-
-            if (!InitRange(RangeSpec, &Range)) {
-                Cell->ErrorCode = ERROR_RANGE;
-            }
-            else {
-                r32 Sum = 0;
-                cell *C;
-
-                while (GetNextCell(Document, &Range, &C)) {
-                    /* pretend that NULL cells evaluate to 0 */
-                    if (C) {
-                        EvaluateCell(Document, C);
-
-                        if (C->Status & CELL_CLOSE_CYCLE) {
-                            C->Status &= ~CELL_CLOSE_CYCLE;
-                            Cell->ErrorCode = ERROR_CYCLE;
-
-                            break;
-                        }
-                        else if (C->ErrorCode) {
-                            Sum += 0.0f;
+                        /* TODO: cache this document (?), so that multiple
+                        * references don't pull it in freash every time */
+                        document *Sub = ReadDocumentRelativeTo(Document,
+                                                            FunctionName);
+                        if (!Sub) {
+                            Cell->ErrorCode = ERROR_NOFILE;
                         }
                         else {
-                            char *Str = C->Value;
-                            r32 Real = StringToReal(SkipSpaces(Str), &RHS);
-                            /* TODO: check RHS for trailing characters */
-                            Sum += Real;
+                            cell *SubCell = GetRefCell(Sub, RHS);
+                            cell_value Value = EvaluateCell(Sub, SubCell);
+
+                            Cell->Value = AdoptValue(Document, Value);
+
+                            FreeDocument(Sub);
                         }
                     }
                 }
+            }
+            else if (IsReference(FunctionName)) {
+                cell *C = GetRefCell(Document, FunctionName);
 
-                if (!Cell->ErrorCode) {
-                    char Buffer[128]; /* TMP! */
-                    /* TODO: roll our own snprintf */
-                    snprintf(Buffer, ArrayCount(Buffer), "%.2f", Sum);
-                    Cell->Value = PushString(Document, Buffer);
+                if (C) {
+                    Cell->Value = EvaluateCell(Document, C);
+
+                    if (C->Status & CELL_CLOSE_CYCLE) {
+                        C->Status &= ~CELL_CLOSE_CYCLE;
+                        Cell->ErrorCode = ERROR_CYCLE;
+                    }
                 }
             }
-        }
+            else if (CompareString(FunctionName, "sum") == 0) {
+                range Range;
+                char *RangeSpec = RHS;
+                RHS = BreakAtChar(RangeSpec, ')');
+                /* TODO: check RHS for trailing characters */
 
-        Cell->Status &= ~(CELL_EVALUATING | CELL_FUNCTION);
+                if (!InitRange(RangeSpec, &Range)) {
+                    Cell->ErrorCode = ERROR_RANGE;
+                }
+                else {
+                    r32 Sum = 0;
+                    cell *C;
+
+                    while (GetNextCell(Document, &Range, &C)) {
+                        /* pretend that NULL cells evaluate to 0 */
+                        if (C) {
+                            EvaluateCell(Document, C);
+
+                            if (C->Status & CELL_CLOSE_CYCLE) {
+                                C->Status &= ~CELL_CLOSE_CYCLE;
+                                Cell->ErrorCode = ERROR_CYCLE;
+
+                                break;
+                            }
+                            else if (C->ErrorCode) {
+                                Sum += 0.0f;
+                            }
+                            else {
+                                r32 Value = 0;
+
+                                switch (C->Value.Type) {
+                                case CELL_TYPE_REAL:
+                                    Value = C->Value.AsReal;
+                                    break;
+                                case CELL_TYPE_INT:
+                                    Value = C->Value.AsInt;
+                                    break;
+                                default: break;
+                                }
+
+                                Sum += Value;
+                            }
+                        }
+                    }
+
+                    if (!Cell->ErrorCode) {
+                        Cell->Value = (cell_value){
+                            .Type = CELL_TYPE_REAL,
+                            .AsReal = Sum,
+                        };
+                    }
+                }
+            }
+
+            Cell->Status &= ~CELL_EVALUATING;
+        }
     }
 
     return Cell->Value;

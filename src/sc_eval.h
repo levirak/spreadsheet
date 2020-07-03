@@ -3,6 +3,6 @@
 
 #include <sc_mem.h>
 
-char *EvaluateCell(document *Spreadsheet, cell *Cell);
+cell_value EvaluateCell(document *Spreadsheet, cell *Cell);
 
 #endif

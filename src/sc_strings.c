@@ -120,6 +120,27 @@ char *Strip(char *Str) {
     return Str;
 }
 
+bool LooksLikeInt(char *Str) {
+    bool NotEmpty = false;
+
+    if (Str && *Str) {
+        NotEmpty = true;
+
+        switch (*Str) {
+        case '-': ++Str; break;
+        case '+': ++Str; break;
+        default: break;
+        }
+
+        while (isdigit(*Str)) {
+            ++Str;
+            if (*Str == ',') ++Str;
+        }
+    }
+
+    return NotEmpty && *Str == '\0';
+}
+
 bool LooksLikeReal(char *Str) {
     bool HasDecimal = false;
 
@@ -130,7 +151,10 @@ bool LooksLikeReal(char *Str) {
         default: break;
         }
 
-        while (isdigit(*Str) || *Str == ',') ++Str;
+        while (isdigit(*Str)) {
+            ++Str;
+            if (*Str == ',') ++Str;
+        }
 
         if (*Str == '.') {
             HasDecimal = true;
@@ -142,18 +166,36 @@ bool LooksLikeReal(char *Str) {
     return HasDecimal && *Str == '\0';
 }
 
+char *CellValueToString(cell_value Value, char *Buffer, mm Size) {
+    switch (Value.Type) {
+#define CASE(T,...) case T: snprintf(Buffer, Size, __VA_ARGS__); break
+    CASE(CELL_TYPE_NONE,   "%s",     "");
+    CASE(CELL_TYPE_STRING, "%s",     Value.AsString);
+    CASE(CELL_TYPE_REAL,   "%'.02f", Value.AsReal);
+    CASE(CELL_TYPE_INT,    "%'d",    Value.AsInt);
+#undef CASE
+    default: snprintf(Buffer, Size, "E:type"); break;
+    }
+
+    return Buffer;
+}
+
 void PrintCell(cell *Cell, char *Delim, s32 Width, s32 Align) {
     static char Buffer[MAX_COLUMN_WIDTH+1];
-    static char ValueBuffer[MAX_COLUMN_WIDTH+1];
+    static char ValBuffer[MAX_COLUMN_WIDTH+1];
     static char *End = Buffer + ArrayCount(Buffer);
+
+    Assert(Cell);
+    Assert(Width < (s32)ArrayCount(Buffer));
 
     char *Cur = Buffer;
     char *Value;
 
-    Assert(Cell);
-
     switch (Cell->ErrorCode) {
-    case ERROR_NONE:     Value = Cell->Value;  break;
+    case ERROR_NONE:
+        Value = CellValueToString(Cell->Value, ValBuffer, sizeof ValBuffer);
+        break;
+
     case ERROR_NOFILE:   Value = "E:nofile";   break;
     case ERROR_NOREF:    Value = "E:noref";    break;
     case ERROR_UNCLOSED: Value = "E:unclosed"; break;
@@ -164,20 +206,7 @@ void PrintCell(cell *Cell, char *Delim, s32 Width, s32 Align) {
     }
 
     Assert(Value);
-
-    if (LooksLikeReal(Value)) {
-        char *RHS;
-        r32 Real = StringToReal(Value, &RHS);
-        if (!*RHS) {
-            /* value parsed as a number. Format it. */
-            snprintf(ValueBuffer, sizeof ValueBuffer, "%'.02f", Real);
-            Value = ValueBuffer;
-        }
-    }
-
     mm Count = GlyphCount(Value);
-
-    Assert(Width < (s32)ArrayCount(Buffer));
 
     switch (Align) {
     case ALIGN_LEFT:
@@ -277,9 +306,17 @@ s32 StringToInt(char *Str, char **RHS) {
 
     while (isdigit(*Str)) {
         Result = 10*Result + (*Str++ - '0');
+
+        if (*Str == ',') ++Str; /* skip commas */
     }
 
-    *RHS = Str;
+    if (RHS) {
+        *RHS = Str;
+    }
+    else {
+        Assert(*Str == 0);
+    }
+
     return Mod * Result;
 }
 
@@ -311,6 +348,12 @@ r32 StringToReal(char *Str, char **RHS) {
         }
     }
 
-    *RHS = Str;
+    if (RHS) {
+        *RHS = Str;
+    }
+    else {
+        Assert(*Str == 0);
+    }
+
     return Sign * (High + Low/Fraction);
 }

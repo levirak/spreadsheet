@@ -8,22 +8,6 @@
 #define DEFAULT_CELL_WIDTH 8
 #define MAX_COLUMN_WIDTH 1024 /* Necessary? */
 
-enum cell_status_flags {
-    CELL_FUNCTION    = 0x01,
-    CELL_EVALUATING  = 0x02,
-    CELL_CLOSE_CYCLE = 0x04,
-};
-
-enum cell_error_code {
-    ERROR_NONE = 0,
-    ERROR_NOFILE,
-    ERROR_NOREF,
-    ERROR_UNCLOSED,
-    ERROR_CYCLE,
-    ERROR_RANGE,
-    ERROR_SUB,
-};
-
 enum document_property_flags {
     DOC_PRINT_TOP      = 0x01,
     DOC_PRINT_SIDE     = 0x02,
@@ -38,10 +22,40 @@ enum column_align {
     /* TODO: ALIGN_DECIMAL? */
 };
 
+typedef struct cell_value {
+    enum cell_type {
+        CELL_TYPE_NONE = 0,
+        CELL_TYPE_STRING,
+        CELL_TYPE_REAL,
+        CELL_TYPE_INT,
+        CELL_TYPE_EXPR,
+    } Type;
+
+    union {
+        char *AsString;
+        r32 AsReal;
+        s32 AsInt;
+        char *AsExpr;
+    };
+} cell_value;
+
 typedef struct cell {
-    s32 Status;
-    enum cell_error_code ErrorCode;
-    char *Value;
+    enum cell_status_flags {
+        CELL_EVALUATING  = 0x01,
+        CELL_CLOSE_CYCLE = 0x02,
+    } Status;
+
+    enum cell_error_code {
+        ERROR_NONE = 0,
+        ERROR_NOFILE,
+        ERROR_NOREF,
+        ERROR_UNCLOSED,
+        ERROR_CYCLE,
+        ERROR_RANGE,
+        ERROR_SUB,
+    } ErrorCode;
+
+    cell_value Value;
 } cell;
 
 typedef struct column {

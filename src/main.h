@@ -27,7 +27,7 @@
 #   define CheckLt(E, ...) E
 #   define CheckGe(E, ...) E
 #   define CheckLe(E, ...) E
-#   define InvalidCodePath
+#   define InvalidCodePath __builtin_trap()
 #   define static_assert(...) _Static_assert(__VA_ARGS__)
 #else
 #   include <assert.h>
