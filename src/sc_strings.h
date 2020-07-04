@@ -8,7 +8,7 @@
 
 ssize_t GetLine(char *Buf, mm BufSz, s32 FileHandle);
 s32 GlyphCount(char *Str);
-mm StringSize(char *Str);
+mm StringLength(char *Str);
 char *SkipWord(char *Str);
 char *SkipSpaces(char *Str);
 char *BreakOffWord(char *Str);

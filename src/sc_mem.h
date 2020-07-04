@@ -35,7 +35,7 @@ typedef struct cell_value {
         char *AsString;
         r32 AsReal;
         s32 AsInt;
-        char *AsExpr;
+        struct expr *AsExpr;
     };
 } cell_value;
 
@@ -53,6 +53,8 @@ typedef struct cell {
         ERROR_CYCLE,
         ERROR_RANGE,
         ERROR_SUB,
+        ERROR_TRAIL,
+        ERROR_BAD_FUNC,
     } ErrorCode;
 
     cell_value Value;
@@ -78,6 +80,7 @@ typedef struct document {
     s32 HeadSepIdx;
 } document;
 
+void *PushSize(document *Document, mm Size, mm Align);
 #define INITIAL_STRING_STACK_SIZE 1024 /* TODO: figure out a better number */
 char *PushString(document *Document, char *String);
 

@@ -2,6 +2,7 @@
 #include <sc_mem.h>
 
 #include <sc_strings.h>
+#include <sc_eval.h>
 
 #include <stdlib.h>
 #include <stdint.h>
@@ -38,7 +39,7 @@ document *AllocDocument() {
 
 document *ReadDocumentRelativeTo(document *Doc, char *FileName) {
     char Buffer[256];
-    document *NewDocument;
+    document *NewDoc;
 
     s32 DirFD = Doc? Doc->DirFD: AT_FDCWD;
 
@@ -47,23 +48,23 @@ document *ReadDocumentRelativeTo(document *Doc, char *FileName) {
         return NULL;
     }
 
-    NewDocument = AllocDocument();
+    NewDoc = AllocDocument();
 
     /* TODO: is Buffer big enough? */
     BufferString(Buffer, ArrayCount(Buffer), FileName);
     if (BreakAtLastChar(Buffer, '/') && CompareString(Buffer, ".") != 0) {
         if (*Buffer) {
-            NewDocument->DirFD = openat(DirFD, Buffer, O_DIRECTORY | O_RDONLY);
+            NewDoc->DirFD = openat(DirFD, Buffer, O_DIRECTORY | O_RDONLY);
         }
         else {
-            NewDocument->DirFD = openat(DirFD, "/", O_DIRECTORY | O_RDONLY);
+            NewDoc->DirFD = openat(DirFD, "/", O_DIRECTORY | O_RDONLY);
         }
     }
     else if (DirFD == AT_FDCWD) {
-        NewDocument->DirFD = AT_FDCWD;
+        NewDoc->DirFD = AT_FDCWD;
     }
     else {
-        NewDocument->DirFD = dup(DirFD);
+        NewDoc->DirFD = dup(DirFD);
     }
 
     s32 RowIndex = 0;
@@ -98,23 +99,23 @@ document *ReadDocumentRelativeTo(document *Doc, char *FileName) {
                             PrintError("Trailing after width: %s", Word);
                         }
 
-                        GetColumn(NewDocument, ColumnIndex++)->Width = Width;
+                        GetColumn(NewDoc, ColumnIndex++)->Width = Width;
                     }
                 }
                 else if (CompareString(Word, "print") == 0) {
                     RHS = BreakOffWord(Word = RHS);
 
                     if (CompareString(Word, "top_axis") == 0) {
-                        NewDocument->Properties |= DOC_PRINT_TOP;
+                        NewDoc->Properties |= DOC_PRINT_TOP;
                     }
                     else if (CompareString(Word, "side_axis") == 0) {
-                        NewDocument->Properties |= DOC_PRINT_SIDE;
+                        NewDoc->Properties |= DOC_PRINT_SIDE;
                     }
                     else if (CompareString(Word, "width") == 0) {
-                        NewDocument->Properties |= DOC_PRINT_WIDTH;
+                        NewDoc->Properties |= DOC_PRINT_WIDTH;
                     }
                     else if (CompareString(Word, "head_sep") == 0) {
-                        NewDocument->Properties |= DOC_PRINT_HEAD_SEP;
+                        NewDoc->Properties |= DOC_PRINT_HEAD_SEP;
 
                         RHS = BreakOffWord(Word = RHS);
 
@@ -126,7 +127,7 @@ document *ReadDocumentRelativeTo(document *Doc, char *FileName) {
                                 PrintError("Trailing after width: %s", Word);
                             }
 
-                            NewDocument->HeadSepIdx = Row - 1;
+                            NewDoc->HeadSepIdx = Row - 1;
                         }
                     }
                 }
@@ -151,7 +152,7 @@ document *ReadDocumentRelativeTo(document *Doc, char *FileName) {
                             break;
                         }
 
-                        GetColumn(NewDocument, ColumnIndex++)->Align = Align;
+                        GetColumn(NewDoc, ColumnIndex++)->Align = Align;
                     }
                 }
                 else {
@@ -165,7 +166,7 @@ document *ReadDocumentRelativeTo(document *Doc, char *FileName) {
             while (*RHS) {
                 RHS = BreakOffCell(String = RHS);
 
-                cell *Cell = GetCell(NewDocument, ColumnIndex++, RowIndex);
+                cell *Cell = GetCell(NewDoc, ColumnIndex++, RowIndex);
 
                 if (*String) {
                     if (LooksLikeInt(String)) {
@@ -181,15 +182,13 @@ document *ReadDocumentRelativeTo(document *Doc, char *FileName) {
                         };
                     }
                     else if (IsEvalChar(String[0])) {
-                        Cell->Value = (cell_value){
-                            .Type = CELL_TYPE_EXPR,
-                            .AsExpr = PushString(NewDocument, String + 1),
-                        };
+                        Cell->Value =
+                            Compile(NewDoc, String + 1, &Cell->ErrorCode);
                     }
                     else {
                         Cell->Value = (cell_value){
                             .Type = CELL_TYPE_STRING,
-                            .AsString = PushString(NewDocument, String),
+                            .AsString = PushString(NewDoc, String),
                         };
                     }
                 }
@@ -200,7 +199,7 @@ document *ReadDocumentRelativeTo(document *Doc, char *FileName) {
     }
 
     close(FileHandle);
-    return NewDocument;
+    return NewDoc;
 }
 
 void FreeDocument(document *Doc) {
@@ -283,15 +282,20 @@ void MemCopy(void *Destination, mm Size, void *Source) {
     }
 }
 
-char *PushString(document *Doc, char *InString) {
+void *PushSize(document *Doc, mm Size, mm Align) {
     Assert(Doc);
-    Assert(InString);
+    Assert(Align);
 
-    mm Length = StringSize(InString) + 1;
+    mm Used(page *Page) {
+        Assert(Page);
+        mm Bumped = Page->Used + (Align - 1);
+        return Bumped - (Bumped % Align);
+    }
+
     mm NumPages = 0;
 
     page **Cur = &Doc->Strings;
-    while (*Cur && (**Cur).Size <= (**Cur).Used + Length) {
+    while (*Cur && (**Cur).Size <= Used(*Cur) + Size) {
         Assert((PAGE_ALLOC_SIZE << NumPages) <= (SIZE_MAX >> 1));
 
         Cur = &(**Cur).Next;
@@ -307,7 +311,7 @@ char *PushString(document *Doc, char *InString) {
             .Used = 0,
             .Next = 0,
         };
-        Assert(Length <= NewPage->Size);
+        Assert(Size <= NewPage->Size);
 
         *Cur = NewPage;
 
@@ -316,11 +320,21 @@ char *PushString(document *Doc, char *InString) {
 
     page *Page = *Cur;
 
-    char *OutString = Page->Data + Page->Used;
-    mm Written = BufferString(OutString, Length, InString) + 1;
-    Page->Used += Written;
+    char *AllocatedRange = Page->Data + Used(Page);
+    Page->Used = Used(Page) + Size;
 
-    Assert(Written == Length);
+    return AllocatedRange;
+}
 
-    return OutString;
+char *PushString(document *Doc, char *InString) {
+    Assert(Doc);
+    Assert(InString);
+
+    mm Size = StringLength(InString) + 1;
+    char *Buffer = PushSize(Doc, Size, 1);
+
+    mm Written = BufferString(Buffer, Size, InString) + 1;
+    Assert(Written == Size);
+
+    return Buffer;
 }

@@ -51,7 +51,7 @@ s32 GlyphCount(char *Str) {
     return Count;
 }
 
-mm StringSize(char *Str) {
+mm StringLength(char *Str) {
     char *Cur = Str;
     while (*Cur) ++Cur;
     return (mm)(Cur - Str);
@@ -202,6 +202,8 @@ void PrintCell(cell *Cell, char *Delim, s32 Width, s32 Align) {
     case ERROR_CYCLE:    Value = "E:cycle";    break;
     case ERROR_RANGE:    Value = "E:range";    break;
     case ERROR_SUB:      Value = "E:sub";      break;
+    case ERROR_TRAIL:    Value = "E:trail";    break;
+    case ERROR_BAD_FUNC: Value = "E:func";     break;
     default:             Value = "E:unknown";  break;
     }
 
