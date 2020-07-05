@@ -53,6 +53,19 @@
 
 #define ArrayCount(A) (sizeof A / sizeof *A)
 
+/*
+#define Min(A, ...) ({ \
+    typeof(A) Min = (A), Vector[] = { __VA_ARGS__ }; \
+    for (s32 Idx; Idx < (s32)ArrayCount(Vector); ++Idx) {\
+        if (Min < Vector[Idx]) Min = Vector[Idx]; \
+    } \
+    Min;\
+})
+ */
+
+#define Max(A, B) ({ typeof(A) _A = (A), _B = (B); _A > _B ? _A : _B; })
+#define Min(A, B) ({ typeof(A) _A = (A), _B = (B); _A < _B ? _A : _B; })
+
 #include <stdint.h>
 typedef int8_t  s8;
 typedef int16_t s16;
@@ -86,6 +99,8 @@ static_assert(sizeof (dptr) == sizeof (ptr));
 static_assert(sizeof (mm) == sizeof (ptr));
 static_assert(sizeof (mm) == sizeof (smm));
 static_assert(sizeof (smm) == sizeof (dptr));
+static_assert(sizeof (r32) == sizeof (s32));
+static_assert(sizeof (r64) == sizeof (s64));
 
 #define fallthrough __attribute__((fallthrough))
 /*#define macro static __attribute__((always_inline))*/

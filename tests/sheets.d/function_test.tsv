@@ -16,11 +16,10 @@ sum of ints	fibinacci	cylce1	good file refs
 14	=sum(B14:B15)	=C13
 15	=sum(B15:B16)
 16	=sum(B16:B17)
-17	=sum(B17:B18)	-3	Block Sum	=sum(D20:E21)
-18	=sum(B18:B19)		1	1
-19	=sum(B19:B20)		1	1
+17	=sum(B17:B18)	-3	Block Sum	=sum(D20:F21)
+18	=sum(B18:B19)		1	1	1
+19	=sum(B19:B20)		1		1
 20	=sum(B20:B21)
-#:width 16 16 16 16 16
 #:print top_axis
 #:print side_axis
 # vim: ts=16 sw=16 noet tw=0

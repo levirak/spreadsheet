@@ -5,7 +5,7 @@
 
 #include <fcntl.h>
 
-#define DEFAULT_CELL_WIDTH 8
+#define DEFAULT_CELL_WIDTH 16
 #define MAX_COLUMN_WIDTH 1024 /* Necessary? */
 
 enum document_property_flags {

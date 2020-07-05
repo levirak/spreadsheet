@@ -11,14 +11,21 @@
 #include <fcntl.h>
 #include <unistd.h>
 
-typedef struct {
-    s32 StartColumn;
-    s32 StartRow;
-    s32 CurrentColumn;
-    s32 CurrentRow;
-    s32 EndColumn;
-    s32 EndRow;
-} range;
+typedef struct cell_ref {
+    s32 Col;
+    s32 Row;
+} cell_ref;
+
+typedef struct cell_range {
+    cell_ref TopLeft;
+    cell_ref BottomRight;
+} cell_range;
+
+typedef struct range_itr {
+    cell_ref Start;
+    cell_ref Cur;
+    cell_ref Stop;
+} range_itr;
 
 static inline
 bool IsReference(char *RefSpec) {
@@ -46,39 +53,41 @@ cell *GetRefCell(document *Doc, char *RefSpec) {
     return Cell;
 }
 
-
 static inline
-s32 InitRange(char *RangeSpec, range *Range) {
+bool MakeRange(char *RangeSpec, cell_range *Range) {
     /* @TEMP: only 26 columns possible */
-    s32 IsValidCell = 0;
+    bool IsValidCell = false;
     char *RHS;
 
     if (IsReference(RangeSpec)) {
-        Range->StartColumn = RangeSpec[0] - 'A';
-        Range->StartRow = StringToInt(RangeSpec+1, &RHS) - 1;
-
-        Range->CurrentColumn = Range->StartColumn;
-        Range->CurrentRow = Range->StartRow;
+        Range->TopLeft.Col = RangeSpec[0] - 'A';
+        Range->TopLeft.Row = StringToInt(RangeSpec+1, &RHS) - 1;
 
         if (*RHS == ':') {
-            IsValidCell = 1;
+            IsValidCell = true;
 
             ++RHS;
             if (*RHS) {
-                Range->EndColumn = RHS[0] - 'A';
-                Range->EndRow = StringToPositiveInt(RHS+1) - 1;
-                if (Range->EndRow == -1) return 0;
+                Range->BottomRight = (cell_ref){
+                    .Col = RHS[0] - 'A',
+                    .Row = StringToPositiveInt(RHS+1) - 1,
+                };
+
+                if (Range->BottomRight.Row < 0) {
+                    IsValidCell = false;
+                }
             }
             else {
-                Range->EndColumn = Range->CurrentColumn;
-                Range->EndRow = INT_MAX;
+                Range->BottomRight = (cell_ref){
+                    .Col = Range->TopLeft.Col,
+                    .Row = INT_MAX - 1,
+                };
             }
         }
-        else if (*RHS == '\0') {
-            IsValidCell = 1;
+        else if (*RHS == 0) {
+            IsValidCell = true;
 
-            Range->EndRow = Range->CurrentRow;
-            Range->EndColumn = Range->CurrentColumn;
+            Range->BottomRight = Range->TopLeft;
         }
         else {
             PrintError("Unknown rangespec.");
@@ -89,36 +98,42 @@ s32 InitRange(char *RangeSpec, range *Range) {
 }
 
 static inline
-s32 GetNextCell(document *Doc, range *Range, cell **Cell) {
-    s32 CellExists = 0;
+void InitRangeItr(cell_range Range, range_itr *It) {
+    /* @TEMP: only 26 columns possible */
+
+    It->Start = Range.TopLeft;
+    It->Cur = Range.TopLeft;
+    It->Stop = Range.BottomRight;
+}
+
+static inline
+bool GetNextCell(document *Doc, range_itr *It, cell **Cell) {
+    Assert(Cell);
     *Cell = NULL;
 
-    /* TODO: simplify logic or redesign ranges */
-
-    if (Range->CurrentColumn < Doc->ColumnCount
-    &&  Range->CurrentColumn <= Range->EndColumn) {
-        column *Column = Doc->Column + Range->CurrentColumn;
+    s32 ColEnd = Min(Doc->ColumnCount, It->Stop.Col + 1);
+    if (It->Cur.Col < ColEnd) {
+        column *Column = Doc->Column + It->Cur.Col;
 
         /* detect overflow */
-        if (Range->CurrentRow >= Column->CellCount
-        ||  Range->CurrentRow > Range->EndRow) {
-            Range->CurrentRow = Range->StartRow;
-            ++Range->CurrentColumn;
+        s32 RowEnd = Min(Column->CellCount, It->Stop.Row + 1);
+        if (It->Cur.Row >= RowEnd) {
+            It->Cur.Row = It->Start.Row;
+            ++It->Cur.Col;
+            ++Column;
 
-            if (Range->CurrentColumn < Doc->ColumnCount
-            &&  Range->CurrentColumn <= Range->EndColumn) {
-                ++Column;
-            }
-            else {
-                return 0;
-            }
+            /* must recalculate this because we changed columns */
+            RowEnd = Min(Column->CellCount, It->Stop.Row + 1);
         }
 
-        *Cell = Column->Cell + Range->CurrentRow++;
-        CellExists = 1;
+        if (It->Cur.Col < ColEnd && It->Cur.Row < RowEnd) {
+            *Cell = Column->Cell + It->Cur.Row;
+        }
+
+        ++It->Cur.Row;
     }
 
-    return CellExists;
+    return (It->Cur.Col < ColEnd);
 }
 
 cell_value AdoptValue(document *Document, cell_value Value) {
@@ -325,16 +340,19 @@ cell_value EvaluateCell(document *Doc, cell *Cell) {
 
             case EXPR_FUNC: {
                 if (CompareString(Expr->AsFunc.Name, "sum") == 0) {
-                    range Range;
+                    cell_range Range;
 
-                    if (!InitRange(Expr->AsFunc.Param1, &Range)) {
+                    if (!MakeRange(Expr->AsFunc.Param1, &Range)) {
                         Cell->ErrorCode = ERROR_RANGE;
                     }
                     else {
                         r32 Sum = 0;
                         cell *C;
 
-                        while (GetNextCell(Doc, &Range, &C)) {
+                        range_itr RangeItr;
+                        InitRangeItr(Range, &RangeItr);
+
+                        while (GetNextCell(Doc, &RangeItr, &C)) {
                             /* pretend that NULL cells evaluate to 0 */
                             if (C) {
                                 EvaluateCell(Doc, C);

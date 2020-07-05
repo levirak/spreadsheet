@@ -185,13 +185,12 @@ void PrintCell(cell *Cell, char *Delim, s32 Width, s32 Align) {
     static char ValBuffer[MAX_COLUMN_WIDTH+1];
     static char *End = Buffer + ArrayCount(Buffer);
 
-    Assert(Cell);
     Assert(Width < (s32)ArrayCount(Buffer));
 
     char *Cur = Buffer;
-    char *Value;
+    char *Value = "";
 
-    switch (Cell->ErrorCode) {
+    if (Cell) switch (Cell->ErrorCode) {
     case ERROR_NONE:
         Value = CellValueToString(Cell->Value, ValBuffer, sizeof ValBuffer);
         break;

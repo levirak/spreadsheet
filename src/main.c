@@ -38,14 +38,14 @@ void PrintRow(document *Doc, s32 r, s32 Margin) {
         char *FS = c == Doc->ColumnCount - 1? OUTER_FS: INNER_FS;
         column *Column = Doc->Column + c;
 
+        cell *Cell = 0;
+
         if (r < Column->CellCount) {
-            cell *Cell = Column->Cell + r;
+            Cell = Column->Cell + r;
             EvaluateCell(Doc, Cell);
-            PrintCell(Cell, FS, Column->Width, Column->Align);
         }
-        else {
-            printf("%*s%s", Column->Width, "", FS);
-        }
+
+        PrintCell(Cell, FS, Column->Width, Column->Align);
     }
 }
 

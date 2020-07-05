@@ -3,7 +3,7 @@ Date	Credit	Debit	Means	Description
 2018-11-15	1,000.00		cash	initial cash
 2018-11-16		-1.26	cash	tea
 
-#:width 16 16 16 32 8
+#:width 16 16 16 16 32
 #:print head_sep 2
 #:align r r r c
 # vim: ts=16 sw=16 noet

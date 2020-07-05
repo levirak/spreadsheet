@@ -166,9 +166,9 @@ document *ReadDocumentRelativeTo(document *Doc, char *FileName) {
             while (*RHS) {
                 RHS = BreakOffCell(String = RHS);
 
-                cell *Cell = GetCell(NewDoc, ColumnIndex++, RowIndex);
-
                 if (*String) {
+                    cell *Cell = GetCell(NewDoc, ColumnIndex, RowIndex);
+
                     if (LooksLikeInt(String)) {
                         Cell->Value = (cell_value){
                             .Type = CELL_TYPE_INT,
@@ -192,6 +192,8 @@ document *ReadDocumentRelativeTo(document *Doc, char *FileName) {
                         };
                     }
                 }
+
+                ++ColumnIndex;
             }
 
             ++RowIndex;
