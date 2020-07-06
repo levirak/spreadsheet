@@ -163,8 +163,8 @@ s32 main(s32 argc, char **argv) {
     bool PrintFilePaths = argc > 2;
     s32 ReturnCode = 0;
 
-    /* TODO(lrak): try take locale from environment */
-    setlocale(LC_ALL, "en_US.UTF-8");
+    /* NOTE: this call asks glibc to set all the locale from the environment */
+    setlocale(LC_ALL, "");
 
     /* TODO: true argument parsing */
 
