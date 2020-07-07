@@ -1,7 +1,7 @@
 #include "main.h"
-#include "sc_strings.h"
+#include "strings.h"
 
-#include "sc_mem.h"
+#include "mem.h"
 
 #include <stdlib.h>
 #include <unistd.h>

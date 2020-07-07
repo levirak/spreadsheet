@@ -1,8 +1,8 @@
 #include "main.h"
 
-#include "sc_strings.h"
-#include "sc_mem.h"
-#include "sc_eval.h"
+#include "strings.h"
+#include "mem.h"
+#include "eval.h"
 
 #include <stdio.h>
 #include <stdlib.h>
