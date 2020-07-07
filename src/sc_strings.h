@@ -1,7 +1,7 @@
 #ifndef __sc_strings__
 #define __sc_strings__
 
-#include <sc_mem.h>
+#include "sc_mem.h"
 
 #include <stdlib.h>
 #include <stdio.h>

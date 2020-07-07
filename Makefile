@@ -6,7 +6,7 @@ o = .o
 d = .mk
 e =
 
-CPPDIRS = -Isrc
+CPPDIRS = -iquote $(build_dir)
 LDDIRS  =
 LDLIBS  = -pthread -lm
 
