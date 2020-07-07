@@ -123,7 +123,9 @@ bool GetNextCell(document *Doc, range_itr *It, cell **Cell) {
             ++Column;
 
             /* must recalculate this because we changed columns */
-            RowEnd = Min(Column->CellCount, It->Stop.Row + 1);
+            if (It->Cur.Col < ColEnd) {
+                RowEnd = Min(Column->CellCount, It->Stop.Row + 1);
+            }
         }
 
         if (It->Cur.Col < ColEnd && It->Cur.Row < RowEnd) {
