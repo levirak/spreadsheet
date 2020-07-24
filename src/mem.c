@@ -169,7 +169,21 @@ document *ReadDocumentRelativeTo(document *Doc, char *FileName) {
                 if (*String) {
                     cell *Cell = GetCell(NewDoc, ColumnIndex, RowIndex);
 
-                    if (LooksLikeInt(String)) {
+                    if (String[0] == '"') {
+                        /* string literal */
+                        ++String;
+
+                        /* TODO(lrak): deal with escaped '"' and '\t' */
+                        char *Cur = String;
+                        while (*Cur && *Cur != '"') ++Cur;
+                        *Cur = 0;
+
+                        Cell->Value = (cell_value){
+                            .Type = CELL_TYPE_STRING,
+                            .AsString = PushString(NewDoc, String),
+                        };
+                    }
+                    else if (LooksLikeInt(String)) {
                         Cell->Value = (cell_value){
                             .Type = CELL_TYPE_INT,
                             .AsInt = StringToInt(String, 0),
