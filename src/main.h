@@ -28,6 +28,7 @@
 #   define CheckGe(E, ...) E
 #   define CheckLe(E, ...) E
 #   define InvalidCodePath __builtin_trap()
+#   define NotImplemented __builtin_trap()
 #   define static_assert(...) _Static_assert(__VA_ARGS__)
 #else
 #   include <assert.h>
@@ -40,6 +41,7 @@
 #   define CheckLe(E, V) assert((E) <= (V))
 #   include <stdlib.h>
 #   define InvalidCodePath abort()
+#   define NotImplemented abort()
 #endif
 
 #include <stdio.h>

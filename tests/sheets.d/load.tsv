@@ -1,9 +1,9 @@
 A1	=sum(B2:)
-	1
-	1
-	1
-	1
-	1
+	={dir/sub.tsv:A1}
+	={dir/sub.tsv:A1}
+	={dir/sub.tsv:A1}
+	={dir/sub.tsv:A1}
+	={dir/sub.tsv:A1}
 #:width 16 16
 #:print top_axis
 #:print side_axis
