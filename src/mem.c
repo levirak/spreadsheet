@@ -53,12 +53,12 @@ static_assert (sizeof (struct doc_cache_entry) == 24);
 } DocCache = { 0 };
 
 static inline
-ino_t GetInode(fd DirFD, char *FileName)
+ino_t GetInode(fd File, char *FileName)
 {
     struct stat Stat;
     ino_t Inode = 0; /* TODO(lrak): is 0 always invalid? */
 
-    if (fstatat(DirFD, FileName, &Stat, 0) == 0) {
+    if (fstatat(File, FileName, &Stat, 0) == 0) {
         Inode = Stat.st_ino;
     }
 
@@ -119,8 +119,10 @@ document *ReadDocumentRelativeTo(document *Doc, char *FileName)
         ++DocCache.Data[Idx].Num;
     }
     else {
-        fd FileHandle = openat(DirFD, FileName, O_RDONLY);
-        Assert(FileHandle >= 0);
+        file File = {
+            .Handle = openat(DirFD, FileName, O_RDONLY),
+        };
+        Assert(File.Handle >= 0);
 
         NewDoc = AllocDocument();
 
@@ -142,7 +144,7 @@ document *ReadDocumentRelativeTo(document *Doc, char *FileName)
         }
 
         s32 RowIndex = 0;
-        while (GetLine(Buffer, ArrayCount(Buffer), FileHandle) >= 0) {
+        while (GetLine(Buffer, ArrayCount(Buffer), &File) >= 0) {
             s32 ColumnIndex = 0;
             char *RHS = Buffer;
 
@@ -288,7 +290,7 @@ document *ReadDocumentRelativeTo(document *Doc, char *FileName)
             }
         }
 
-        close(FileHandle);
+        close(File.Handle);
 
         DocCache.Data[Idx] = (struct doc_cache_entry){ Inode, NewDoc, 1 };
     }
@@ -457,4 +459,35 @@ char *PushString(document *Doc, char *InString)
 
     CheckEq(BufferString(Buffer, Size, InString), Size - 1);
     return Buffer;
+}
+
+s32 Read(file *File, char *Buffer, mm Size)
+{
+    char *Cur = Buffer;
+    char *End = Buffer + Size;
+
+    do {
+        if (File->BufPos == File->BufSz) {
+            smm NewSz = read(File->Handle, File->Buffer, sizeof File->Buffer);
+
+            if (NewSz < 0) {
+                File->Error = 1; /* TODO(lrak): error discrimination */
+                File->BufSz = 0;
+            }
+            else {
+                File->Error = 0;
+                File->BufSz = (u32)NewSz;
+            }
+
+            File->BufPos = 0;
+        }
+        else  {
+            Assert(File->BufPos < File->BufSz);
+            *Cur++ = File->Buffer[File->BufPos++];
+        }
+    }
+    while (!File->Error && File->BufSz && Cur < End);
+
+    Assert(Cur - Buffer < 0x80000000 /* 2*31 */);
+    return File->Error? -1 : (s32)(Cur - Buffer);
 }

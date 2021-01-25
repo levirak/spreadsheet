@@ -95,4 +95,14 @@ cell *GetCell(document *Doc, s32 ColumnIndex, s32 RowIndex);
 void MemSet(void *Destination, mm Size, char Byte);
 void MemCopy(void *Destination, mm Size, void *Source);
 
+typedef struct file {
+    fd Handle;
+    u32 Error;
+    u32 BufSz;
+    u32 BufPos;
+    char Buffer[256];
+} file;
+
+s32 Read(file *File, char *Buffer, mm Size);
+
 #endif

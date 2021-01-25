@@ -8,7 +8,7 @@
 #include <ctype.h>
 
 /* NOTE: this function does not handle '\r\n' or '\r' line ends */
-ssize_t GetLine(char *Buf, mm BufSz, s32 FileHandle) {
+smm GetLine(char *Buf, mm BufSz, file *File) {
     Assert(Buf);
     Assert(BufSz);
 
@@ -18,19 +18,21 @@ ssize_t GetLine(char *Buf, mm BufSz, s32 FileHandle) {
     s32 BytesRead = 0;
 
     for (Cur = Buf; Cur < End; ++Cur) {
-        /* TODO: buffering to reduce system calls? */
-        BytesRead = read(FileHandle, &C, sizeof C);
-        if (BytesRead && C != '\n') {
-            *Cur = C;
+        if ((BytesRead = Read(File, &C, 1)) < 0) {
+            /* TODO(lrak): handle error */
+            NotImplemented;
+        }
+        else if (!BytesRead || C == '\n') {
+            break;
         }
         else {
-            break;
+            *Cur = C;
         }
     }
     *Cur = '\0';
 
     /* consume to the End of the line even if we cannot store it */
-    while (BytesRead && C != '\n') BytesRead = read(FileHandle, &C, sizeof C);
+    while (BytesRead && C != '\n') BytesRead = read(File->Handle, &C, 1);
 
     if (!BytesRead) {
         return -1;

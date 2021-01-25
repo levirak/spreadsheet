@@ -6,7 +6,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-ssize_t GetLine(char *Buf, mm BufSz, s32 FileHandle);
+smm GetLine(char *Buf, mm BufSz, file *File);
 s32 GlyphCount(char *Str);
 mm StringLength(char *Str);
 char *SkipWord(char *Str);
