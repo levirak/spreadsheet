@@ -27,16 +27,18 @@ typedef struct range_itr {
     cell_ref Stop;
 } range_itr;
 
-static inline
-bool IsReference(char *RefSpec) {
+static inline bool
+IsReference(char *RefSpec)
+{
     /* @TEMP: only 26 columns possible */
     bool Result = isupper(RefSpec[0]) && isdigit(RefSpec[1]);
     /* TODO: Continue on to show that this is a well formed refenerce */
     return Result;
 }
 
-static inline
-cell *GetRefCell(document *Doc, char *RefSpec) {
+static inline cell *
+GetRefCell(document *Doc, char *RefSpec)
+{
     cell *Cell = NULL;
 
     /* TODO: more columns */
@@ -53,8 +55,12 @@ cell *GetRefCell(document *Doc, char *RefSpec) {
     return Cell;
 }
 
-static inline
-bool MakeRange(char *RangeSpec, cell_range *Range) {
+static inline bool
+MakeRange(char *RangeSpec, cell_range *Range)
+{
+    Assert(RangeSpec && *RangeSpec);
+    Assert(Range);
+
     /* @TEMP: only 26 columns possible */
     bool IsValidCell = false;
     char *RHS;
@@ -97,17 +103,19 @@ bool MakeRange(char *RangeSpec, cell_range *Range) {
     return IsValidCell;
 }
 
-static inline
-void InitRangeItr(cell_range Range, range_itr *It) {
+static inline void
+InitRangeItr(cell_range *Range, range_itr *It)
+{
     /* @TEMP: only 26 columns possible */
 
-    It->Start = Range.TopLeft;
-    It->Cur = Range.TopLeft;
-    It->Stop = Range.BottomRight;
+    It->Start = Range->TopLeft;
+    It->Cur = Range->TopLeft;
+    It->Stop = Range->BottomRight;
 }
 
-static inline
-bool GetNextCell(document *Doc, range_itr *It, cell **Cell) {
+static inline bool
+GetNextCell(document *Doc, range_itr *It, cell **Cell)
+{
     Assert(Cell);
     *Cell = NULL;
 
@@ -138,11 +146,12 @@ bool GetNextCell(document *Doc, range_itr *It, cell **Cell) {
     return (It->Cur.Col < ColEnd);
 }
 
-cell_value AdoptValue(document *Document, cell_value Value) {
+cell_value
+AdoptValue(document *Document, cell_value Value)
+{
     if (Value.Type == CELL_TYPE_STRING) {
         Value.AsString = PushString(Document, Value.AsString);
     }
-
     return Value;
 }
 
@@ -166,7 +175,9 @@ typedef struct expr {
     };
 } expr;
 
-cell_value Compile(document *Doc, char *Raw, enum cell_error_code *Error) {
+cell_value
+Compile(document *Doc, char *Raw, enum cell_error_code *Error)
+{
     Assert(Doc);
     Assert(Raw);
     Assert(Error);
@@ -290,7 +301,70 @@ cell_value Compile(document *Doc, char *Raw, enum cell_error_code *Error) {
     };
 }
 
-cell_value EvaluateCell(document *Doc, cell *Cell) {
+static s32
+CountRange(document *Doc, cell_range *Range)
+{
+    Assert(Doc);
+    Assert(Range);
+    /* NOTE: we move from a closed range to a half-open range */
+
+    s32 MaxCol = Doc->ColumnCount;
+    s32 Left = Min(Range->TopLeft.Col, MaxCol);
+    s32 Right = Min(Range->BottomRight.Col, MaxCol) + 1;
+
+    s32 MaxRow = 1;
+    for (s32 Idx = Left; Idx < Right; ++Idx) {
+        s32 Max = Doc->Column[Idx].CellCount - 1;
+        if (Max > MaxRow) MaxRow = Max;
+    }
+
+    s32 Top = Min(Range->TopLeft.Row, MaxRow);
+    s32 Bottom = Min(Range->BottomRight.Row, MaxRow) + 1;
+
+    return (Right - Left) * (Bottom - Top);
+}
+
+static f64
+SumRange(document *Doc, cell_range *Range, enum cell_error_code *ErrorOut)
+{
+    cell *Cell;
+    range_itr RangeItr;
+    InitRangeItr(Range, &RangeItr);
+
+    f64 Sum = 0;
+    enum cell_error_code Error = ERROR_NONE;
+
+    while (!Error && GetNextCell(Doc, &RangeItr, &Cell)) {
+        /* pretend that NULL cells evaluate to 0 */
+        if (Cell) {
+            EvaluateCell(Doc, Cell);
+
+            if (Cell->Status & CELL_CLOSE_CYCLE) {
+                Cell->Status &= ~CELL_CLOSE_CYCLE;
+                Error = ERROR_CYCLE;
+            }
+            else if (Cell->ErrorCode) {
+                /* nop */
+            }
+            else switch (Cell->Value.Type) {
+            case CELL_TYPE_REAL:
+                Sum += Cell->Value.AsReal;
+                break;
+            case CELL_TYPE_INT:
+                Sum += Cell->Value.AsInt;
+                break;
+            default: break;
+            }
+        }
+    }
+
+    if (Error && ErrorOut) *ErrorOut = Error;
+    return Sum;
+}
+
+cell_value
+EvaluateCell(document *Doc, cell *Cell)
+{
     Assert(Cell);
 
     if (Cell->Value.Type == CELL_TYPE_EXPR) {
@@ -303,6 +377,7 @@ cell_value EvaluateCell(document *Doc, cell *Cell) {
             struct expr *Expr = Cell->Value.AsExpr;
 
             if (Expr) switch (Expr->Type) {
+                cell_range Range;
             case EXPR_NONE: { /* noop */ } break;
 
             case EXPR_INT_REF: {
@@ -342,56 +417,44 @@ cell_value EvaluateCell(document *Doc, cell *Cell) {
 
             case EXPR_FUNC: {
                 if (CompareString(Expr->AsFunc.Name, "sum") == 0) {
-                    cell_range Range;
-
                     if (!MakeRange(Expr->AsFunc.Param1, &Range)) {
                         Cell->ErrorCode = ERROR_RANGE;
                     }
                     else {
-                        r32 Sum = 0;
-                        cell *C;
-
-                        range_itr RangeItr;
-                        InitRangeItr(Range, &RangeItr);
-
-                        while (GetNextCell(Doc, &RangeItr, &C)) {
-                            /* pretend that NULL cells evaluate to 0 */
-                            if (C) {
-                                EvaluateCell(Doc, C);
-
-                                if (C->Status & CELL_CLOSE_CYCLE) {
-                                    C->Status &= ~CELL_CLOSE_CYCLE;
-                                    Cell->ErrorCode = ERROR_CYCLE;
-
-                                    break;
-                                }
-                                else if (C->ErrorCode) {
-                                    Sum += 0.0f;
-                                }
-                                else {
-                                    r32 Value = 0;
-
-                                    switch (C->Value.Type) {
-                                    case CELL_TYPE_REAL:
-                                        Value = C->Value.AsReal;
-                                        break;
-                                    case CELL_TYPE_INT:
-                                        Value = C->Value.AsInt;
-                                        break;
-                                    default: break;
-                                    }
-
-                                    Sum += Value;
-                                }
-                            }
-                        }
-
+                        f64 Sum = SumRange(Doc, &Range, &Cell->ErrorCode);
                         if (!Cell->ErrorCode) {
                             Cell->Value = (cell_value){
                                 .Type = CELL_TYPE_REAL,
                                 .AsReal = Sum,
                             };
                         }
+                    }
+                }
+                else if (CompareString(Expr->AsFunc.Name, "avg") == 0) {
+                    if (!MakeRange(Expr->AsFunc.Param1, &Range)) {
+                        Cell->ErrorCode = ERROR_RANGE;
+                    }
+                    else {
+                        f64 Sum = SumRange(Doc, &Range, &Cell->ErrorCode);
+                        s32 Count = CountRange(Doc, &Range);
+
+                        if (!Cell->ErrorCode) {
+                            Cell->Value = (cell_value){
+                                .Type = CELL_TYPE_REAL,
+                                .AsReal = Count? Sum/Count: 0.0,
+                            };
+                        }
+                    }
+                }
+                else if (CompareString(Expr->AsFunc.Name, "n") == 0) {
+                    if (!MakeRange(Expr->AsFunc.Param1, &Range)) {
+                        Cell->ErrorCode = ERROR_RANGE;
+                    }
+                    else {
+                        Cell->Value = (cell_value){
+                            .Type = CELL_TYPE_INT,
+                            .AsInt = CountRange(Doc, &Range),
+                        };
                     }
                 }
                 else {

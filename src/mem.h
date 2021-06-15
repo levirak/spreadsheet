@@ -33,8 +33,8 @@ typedef struct cell_value {
 
     union {
         char *AsString;
-        r32 AsReal;
-        s32 AsInt;
+        f64 AsReal;
+        s64 AsInt;
         struct expr *AsExpr;
     };
 } cell_value;
@@ -80,7 +80,7 @@ typedef struct document {
     s32 HeadSepIdx;
 } document;
 
-void *PushSize(document *Document, mm Size, mm Align);
+void *PushSize(document *Document, umm Size, umm Align);
 #define INITIAL_STRING_STACK_SIZE 1024 /* TODO: figure out a better number */
 char *PushString(document *Document, char *String);
 
@@ -92,8 +92,8 @@ column *GetColumn(document *Doc, s32 ColumnIndex);
 cell *GetCell(document *Doc, s32 ColumnIndex, s32 RowIndex);
 
 #define MemZero(M, S) MemSet(M, S, 0)
-void MemSet(void *Destination, mm Size, char Byte);
-void MemCopy(void *Destination, mm Size, void *Source);
+void MemSet(void *Destination, umm Size, char Byte);
+void MemCopy(void *Destination, umm Size, void *Source);
 
 typedef struct file {
     fd Handle;
@@ -103,6 +103,6 @@ typedef struct file {
     char Buffer[256];
 } file;
 
-s32 Read(file *File, char *Buffer, mm Size);
+s32 Read(file *File, char *Buffer, umm Size);
 
 #endif

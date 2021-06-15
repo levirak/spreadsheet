@@ -11,10 +11,9 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 
-typedef struct page
-{
-    mm Size;
-    mm Used;
+typedef struct page {
+    umm Size;
+    umm Used;
     struct page *Next;
     char Data[0];
 } page;
@@ -22,8 +21,8 @@ typedef struct page
 #define PAGE_ALLOC_SIZE (512ul)
 static_assert(PAGE_ALLOC_SIZE > sizeof (page), "Allocation size too small.");
 
-static inline
-document *AllocDocument()
+static inline document *
+AllocDocument()
 {
     document *Doc = malloc(sizeof *Doc);
 
@@ -39,8 +38,7 @@ document *AllocDocument()
     return Doc;
 }
 
-static struct
-{
+static struct {
     u32 Size;
     u32 Used;
     struct doc_cache_entry {
@@ -52,8 +50,8 @@ static_assert (sizeof (ino_t) == 8);
 static_assert (sizeof (struct doc_cache_entry) == 24);
 } DocCache = { 0 };
 
-static inline
-ino_t GetInode(fd File, char *FileName)
+static inline ino_t
+GetInode(fd File, char *FileName)
 {
     struct stat Stat;
     ino_t Inode = 0; /* TODO(lrak): is 0 always invalid? */
@@ -65,8 +63,8 @@ ino_t GetInode(fd File, char *FileName)
     return Inode;
 }
 
-static inline
-s32 GetCacheIdxByInode(ino_t Inode)
+static inline s32
+GetCacheIdxByInode(ino_t Inode)
 {
     s32 Result = -1;
 
@@ -95,7 +93,8 @@ s32 GetCacheIdxByInode(ino_t Inode)
     return Result;
 }
 
-document *ReadDocumentRelativeTo(document *Doc, char *FileName)
+document *
+ReadDocumentRelativeTo(document *Doc, char *FileName)
 {
     char Buffer[256];
     document *NewDoc = 0;
@@ -298,7 +297,8 @@ document *ReadDocumentRelativeTo(document *Doc, char *FileName)
     return NewDoc;
 }
 
-void FreeDocument(document *Doc)
+void
+FreeDocument(document *Doc)
 {
     s32 NumOpen = 0;
 
@@ -338,7 +338,8 @@ void FreeDocument(document *Doc)
     }
 }
 
-column *GetColumn(document *Doc, s32 ColumnIndex)
+column *
+GetColumn(document *Doc, s32 ColumnIndex)
 {
     while (Doc->ColumnCount <= ColumnIndex) {
         while (Doc->ColumnCount >= Doc->ColumnCap) {
@@ -349,8 +350,7 @@ column *GetColumn(document *Doc, s32 ColumnIndex)
 
         column *Column = Doc->Column + Doc->ColumnCount++;
 
-#       define INITIAL_ROW_CAP 8
-
+#define INITIAL_ROW_CAP 8
         *Column = (column){
             .Width = DEFAULT_CELL_WIDTH,
             .CellCap = INITIAL_ROW_CAP,
@@ -362,7 +362,8 @@ column *GetColumn(document *Doc, s32 ColumnIndex)
     return Doc->Column + ColumnIndex;
 }
 
-cell *GetCell(document *Doc, s32 ColumnIndex, s32 RowIndex)
+cell *
+GetCell(document *Doc, s32 ColumnIndex, s32 RowIndex)
 {
     column *Column = GetColumn(Doc, ColumnIndex);
 
@@ -381,7 +382,8 @@ cell *GetCell(document *Doc, s32 ColumnIndex, s32 RowIndex)
     return Column->Cell + RowIndex;
 }
 
-void MemSet(void *Destination, mm Size, char Byte)
+void
+MemSet(void *Destination, umm Size, char Byte)
 {
     char *End = (char *)Destination + Size;
 
@@ -392,7 +394,8 @@ void MemSet(void *Destination, mm Size, char Byte)
     }
 }
 
-void MemCopy(void *Destination, mm Size, void *Source)
+void
+MemCopy(void *Destination, umm Size, void *Source)
 {
     char *End = (char *)Destination + Size;
 
@@ -404,18 +407,19 @@ void MemCopy(void *Destination, mm Size, void *Source)
     }
 }
 
-void *PushSize(document *Doc, mm Size, mm Align)
+void *
+PushSize(document *Doc, umm Size, umm Align)
 {
     Assert(Doc);
     Assert(Align);
 
-    mm Used(page *Page) {
+    umm Used(page *Page) {
         Assert(Page);
-        mm Bumped = Page->Used + (Align - 1);
+        umm Bumped = Page->Used + (Align - 1);
         return Bumped - (Bumped % Align);
     }
 
-    mm NumPages = 0;
+    umm NumPages = 0;
 
     page **Cur = &Doc->Strings;
     while (*Cur && (**Cur).Size <= Used(*Cur) + Size) {
@@ -426,7 +430,7 @@ void *PushSize(document *Doc, mm Size, mm Align)
     }
 
     if (!*Cur) {
-        mm NewSize = PAGE_ALLOC_SIZE << NumPages;
+        umm NewSize = PAGE_ALLOC_SIZE << NumPages;
 
         page *NewPage = malloc(NewSize);
         *NewPage = (page){
@@ -449,19 +453,21 @@ void *PushSize(document *Doc, mm Size, mm Align)
     return AllocatedRange;
 }
 
-char *PushString(document *Doc, char *InString)
+char *
+PushString(document *Doc, char *InString)
 {
     Assert(Doc);
     Assert(InString);
 
-    mm Size = StringLength(InString) + 1;
+    umm Size = StringLength(InString) + 1;
     char *Buffer = PushSize(Doc, Size, 1);
 
     CheckEq(BufferString(Buffer, Size, InString), Size - 1);
     return Buffer;
 }
 
-s32 Read(file *File, char *Buffer, mm Size)
+s32
+Read(file *File, char *Buffer, umm Size)
 {
     char *Cur = Buffer;
     char *End = Buffer + Size;

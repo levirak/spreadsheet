@@ -84,13 +84,13 @@ typedef uintptr_t ptr;
 
 #include <stddef.h>
 typedef ptrdiff_t dptr;
-typedef size_t    mm;
+typedef size_t    umm;
 typedef ssize_t   smm;
 
 #include <stdbool.h>
 
-typedef float  r32;
-typedef double r64;
+typedef float  f32;
+typedef double f64;
 
 typedef int fd;
 
@@ -98,11 +98,11 @@ typedef int fd;
 static_assert(sizeof (ptr) == sizeof (sptr));
 static_assert(sizeof (dptr) == sizeof (sptr));
 static_assert(sizeof (dptr) == sizeof (ptr));
-static_assert(sizeof (mm) == sizeof (ptr));
-static_assert(sizeof (mm) == sizeof (smm));
+static_assert(sizeof (umm) == sizeof (ptr));
+static_assert(sizeof (umm) == sizeof (smm));
 static_assert(sizeof (smm) == sizeof (dptr));
-static_assert(sizeof (r32) == sizeof (s32));
-static_assert(sizeof (r64) == sizeof (s64));
+static_assert(sizeof (f32) == sizeof (s32));
+static_assert(sizeof (f64) == sizeof (s64));
 
 #define fallthrough __attribute__((fallthrough))
 /*#define macro static __attribute__((always_inline))*/
